@@ -6,6 +6,8 @@
 
 ### Learniing Transformer From Translation Task
 
+1. https://colab.research.google.com/drive/1F3imyK6SC4L8nXDSfCxKzNdNji-H9vMI?authuser=1#scrollTo=uxocDPugRkaA
+
 ### Bert
 
 ### LLaMA
