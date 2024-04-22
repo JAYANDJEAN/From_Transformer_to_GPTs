@@ -1,11 +1,9 @@
 from transformers import AutoTokenizer
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en")
 # model_id = 'openai-community/gpt2'
 # model_id= 'google-bert/bert-base-cased'
 # 'facebook/mbart-large-cc25'
-tokenizer = AutoTokenizer.from_pretrained('Helsinki-NLP/opus-mt-zh-en')
+tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-hf', token='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')
 
 # The first sentences from the abstract of "<Attention Is All You Need>"
 corpus = [
