@@ -130,11 +130,14 @@ class PositionalEncoding(nn.Module):
                  max_len: int = 5000):
         super(PositionalEncoding, self).__init__()
         den = torch.exp(- torch.arange(0, emb_size, 2) * math.log(10000) / emb_size)
+        print(den.shape)
         pos = torch.arange(0, max_len).reshape(max_len, 1)
+        print(pos.shape)
         pos_embedding = torch.zeros((max_len, emb_size))
         pos_embedding[:, 0::2] = torch.sin(pos * den)
         pos_embedding[:, 1::2] = torch.cos(pos * den)
         pos_embedding = pos_embedding.unsqueeze(-2)
+        print(pos_embedding)
 
         self.dropout = nn.Dropout(dropout)
         self.register_buffer('pos_embedding', pos_embedding)
@@ -268,7 +271,6 @@ def show_parameters():
     text_to_indices, vocabs, train_loader, eval_loader = get_data(BATCH_SIZE)
     src_size, tgt_size = len(vocabs[src_l]), len(vocabs[tgt_l])
     _, (src, tgt) = next(enumerate(train_loader))
-    # print('输入单例展示：')
     print('src size: ', src.shape)  # torch.Size([27, 128]) 最长句子是包含27个token
     print('tgt size: ', tgt.shape)  # torch.Size([24, 128])
     print(src[:, 0])
