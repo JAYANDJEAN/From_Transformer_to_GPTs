@@ -17,6 +17,7 @@ SPECIAL_IDS = {'<unk>': 0, '<pad>': 1, '<bos>': 2, '<eos>': 3}
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 src_l = 'de'
 tgt_l = 'en'
+batch_first = False
 
 
 def generate_square_subsequent_mask(sz: int):
@@ -130,15 +131,11 @@ class PositionalEncoding(nn.Module):
                  max_len: int = 5000):
         super(PositionalEncoding, self).__init__()
         den = torch.exp(- torch.arange(0, emb_size, 2) * math.log(10000) / emb_size)
-        print(den.shape)
         pos = torch.arange(0, max_len).reshape(max_len, 1)
-        print(pos.shape)
         pos_embedding = torch.zeros((max_len, emb_size))
         pos_embedding[:, 0::2] = torch.sin(pos * den)
         pos_embedding[:, 1::2] = torch.cos(pos * den)
         pos_embedding = pos_embedding.unsqueeze(-2)
-        print(pos_embedding)
-
         self.dropout = nn.Dropout(dropout)
         self.register_buffer('pos_embedding', pos_embedding)
 
@@ -246,7 +243,7 @@ def train_ops():
                                      tgt_vocab_size=len(vocab_lang[tgt_l])
                                      ).to(DEVICE)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['PAD_IDX'])
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
 
     for epoch in range(1, NUM_EPOCHS + 1):
         start_time = timer()
@@ -263,6 +260,7 @@ def train_ops():
 
 def show_parameters():
     BATCH_SIZE = 128
+    EMB_SIZE = 512
     print('--------------------------data------------------------------------')
     '''
     text_to_indices: 将文本转成编号序列
@@ -318,42 +316,39 @@ def show_parameters():
     print(tgt_padding_mask.shape)  # torch.Size([128, 23])
 
     print('-------------------------transformer-------------------------------')
-    '''    
     '''
-    emb_size = 512
-    print(src.shape)
-    src_tok_emb = TokenEmbedding(src_size, emb_size)
-    positional_encoding = PositionalEncoding(emb_size, dropout=0.1)
+    原始的句子的shape是(S, N)，经过embedding，是(S, N, E)，加上pos_embedding，依然是(S, N, E)
+    '''
+    src_tok_emb = TokenEmbedding(src_size, EMB_SIZE)
+    positional_encoding = PositionalEncoding(EMB_SIZE, dropout=0.1)
     src_emb = positional_encoding(src_tok_emb(src))
+    print(src.shape)
     print(src_tok_emb(src).shape)
     print(src_emb.shape)
 
-    # transformer = Seq2SeqTransformer(num_encoder_layers=3,
-    #                                  num_decoder_layers=3,
-    #                                  emb_size=512,
-    #                                  n_head=8,
-    #                                  src_vocab_size=src_size,
-    #                                  tgt_vocab_size=tgt_size).to(DEVICE)
-    # logits_pred = transformer(src, tgt_input, src_mask, tgt_mask,
-    #                           src_padding_mask, tgt_padding_mask, src_padding_mask)
-    # print('预测单例展示：')
-    # print('logits_pred size: ', logits_pred.shape)
-    # print(logits_pred[:, 0, :])
-    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
-    # tgt_out_single = tgt_out[:, 0].reshape(-1)
-    # logits_pred_single = logits_pred[:, 0, :].reshape(-1, logits_pred.shape[-1])
-    # loss = loss_fn(logits_pred_single, tgt_out_single)
-    # print('logits_pred_single size:', logits_pred_single.shape)
-    # print('tgt_out_single size:', tgt_out_single.shape)
-    # print(logits_pred_single)
-    # print(tgt_out_single)
-    # print(loss)
-    #
-    # print('--------------eval-----------------')
-    # memory = transformer.encode(src, src_mask).to(DEVICE)
-    # print(memory.shape)
+    # 模型定义，没什么好讲的
+    transformer = Seq2SeqTransformer(num_encoder_layers=3,
+                                     num_decoder_layers=3,
+                                     emb_size=EMB_SIZE,
+                                     n_head=8,
+                                     src_vocab_size=src_size,
+                                     tgt_vocab_size=tgt_size
+                                     ).to(DEVICE)
+    logits_pred = transformer(src, tgt_input, src_mask, tgt_mask,
+                              src_padding_mask, tgt_padding_mask,
+                              src_padding_mask)
+    print('预测单例展示：')
+    print('logits_pred size: ', logits_pred.shape)
+    print(logits_pred[:, 0, :])
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
+    loss = loss_fn(logits_pred.reshape(-1, logits_pred.shape[-1]), tgt_out.reshape(-1))
+    print(loss)
+
+    print('----------------------------eval-------------------------------')
+    memory = transformer.encode(src, src_mask).to(DEVICE)
+    print(memory.shape)
 
 
-# train_ops()
+train_ops()
 
-show_parameters()
+# show_parameters()
