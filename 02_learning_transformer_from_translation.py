@@ -115,12 +115,10 @@ def get_data(batch_size: int):
         func_vocabs[lang].set_default_index(SPECIAL_IDS['<unk>'])
         func_t2i[lang] = sequential_transforms(func_token[lang], func_vocabs[lang], tensor_transform)
 
-    train_dataloader = DataLoader(Multi30k(split='train', language_pair=(src_l, tgt_l)),
-                                  batch_size=batch_size,
-                                  collate_fn=collate_fn)
-    val_dataloader = DataLoader(Multi30k(split='valid', language_pair=(src_l, tgt_l)),
-                                batch_size=batch_size,
-                                collate_fn=collate_fn)
+    train = Multi30k(split='train', language_pair=(src_l, tgt_l))
+    train_dataloader = DataLoader(train, batch_size=batch_size, collate_fn=collate_fn)
+    val = Multi30k(split='valid', language_pair=(src_l, tgt_l))
+    val_dataloader = DataLoader(val, batch_size=batch_size, collate_fn=collate_fn)
 
     return func_t2i, func_vocabs, train_dataloader, val_dataloader
 
@@ -192,6 +190,7 @@ class Seq2SeqTransformer(nn.Module):
                 src_padding_mask: Tensor,
                 tgt_padding_mask: Tensor,
                 memory_key_padding_mask: Tensor):
+        # src = (N, S), (N, S, E)
         src_emb = self.positional_encoding(self.src_tok_emb(src))
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
         outs = self.transformer(src_emb, tgt_emb, src_mask, tgt_mask, None,
@@ -261,7 +260,7 @@ def train_ops():
 
 def show_parameters():
     BATCH_SIZE = 128
-    print('--------------------get data------------------------------------')
+    print('--------------------------data------------------------------------')
     '''
     text_to_indices: 将文本转成编号序列
     vocabs: 字典
@@ -273,9 +272,14 @@ def show_parameters():
     print('src size: ', src.shape)  # torch.Size([27, 128]) 最长句子是包含27个token
     print('tgt size: ', tgt.shape)  # torch.Size([24, 128])
     print(src[:, 0])
-    print(tgt[:, 0])
     # tensor([2, 21, 85, 257, 31, 87, 22, 94, 7, 16, 112, 7910, 3209, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    print(tgt[:, 0])
     # tensor([2, 19, 25, 15, 1169, 808, 17, 57, 84, 336, 1339, 5, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+
+    # 测试文本转序号的功能
+    print(text_to_indices['en']('A young man wearing blue carries equipment across a street.'))
+    for i in range(5):
+        print(i, vocabs['en'].lookup_token(i))
 
     '''
     去尾、掐头
@@ -288,55 +292,64 @@ def show_parameters():
     '''
     tgt_input, tgt_out = tgt[:-1, :].to(DEVICE), tgt[1:, :].to(DEVICE)
 
+    print('-------------------------mask-------------------------------')
     '''
-    Shape:
-        S is the source sequence length, 
-        T is the target sequence length, 
-        N is the batch size, 
-        E is the feature number
-        src: (S, E) for unbatched input, (S, N, E) if batch_first=False or (N, S, E) if batch_first=True.
-        tgt: (T, E) for unbatched input, (T, N, E) if batch_first=False or (N, T, E) if batch_first=True.
-        src_mask: (S, S) or (N⋅num_heads, S, S).
-        tgt_mask: (T, T) or (N⋅num_heads, T, T).
-        memory_mask: (T, S).
-        src_key_padding_mask: (S) for unbatched input otherwise (N, S).
-        tgt_key_padding_mask: (T) for unbatched input otherwise (N, T).
-        memory_key_padding_mask: (S) for unbatched input otherwise (N, S).
-        output: (T, E) for unbatched input, (T, N, E) if batch_first=False or (N, T, E) if batch_first=True.
-    '''
-    print('--------------------------------------------------------')
+        Shape:
+            S is the source sequence length, 
+            T is the target sequence length, 
+            N is the batch size, 
+            E is the feature number
+            src: (S, E) for unbatched input, (S, N, E) if batch_first=False or (N, S, E) if batch_first=True.
+            tgt: (T, E) for unbatched input, (T, N, E) if batch_first=False or (N, T, E) if batch_first=True.
+            src_mask: (S, S) or (N⋅num_heads, S, S).
+            tgt_mask: (T, T) or (N⋅num_heads, T, T).
+            memory_mask: (T, S).
+            src_key_padding_mask: (S) for unbatched input otherwise (N, S).
+            tgt_key_padding_mask: (T) for unbatched input otherwise (N, T).
+            memory_key_padding_mask: (S) for unbatched input otherwise (N, S).
+            output: (T, E) for unbatched input, (T, N, E) if batch_first=False or (N, T, E) if batch_first=True.
+        '''
     src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input)
-    print(src_mask.shape)
-    print(tgt_mask.shape)
-    print(src_padding_mask.shape)
-    print(tgt_padding_mask.shape)
+    print(src_mask.shape)  # torch.Size([27, 27])
+    print(tgt_mask.shape)  # torch.Size([23, 23])
+    print(src_padding_mask.shape)  # torch.Size([128, 27])
+    print(tgt_padding_mask.shape)  # torch.Size([128, 23])
 
-    positional_encoding = PositionalEncoding(512, dropout=0.1)
+    print('-------------------------transformer-------------------------------')
+    '''    
+    '''
+    emb_size = 512
+    print(src.shape)
+    src_tok_emb = TokenEmbedding(src_size, emb_size)
+    positional_encoding = PositionalEncoding(emb_size, dropout=0.1)
+    src_emb = positional_encoding(src_tok_emb(src))
+    print(src_tok_emb(src).shape)
+    print(src_emb.shape)
 
-    transformer = Seq2SeqTransformer(num_encoder_layers=3,
-                                     num_decoder_layers=3,
-                                     emb_size=512,
-                                     n_head=8,
-                                     src_vocab_size=src_size,
-                                     tgt_vocab_size=tgt_size).to(DEVICE)
-    logits_pred = transformer(src, tgt_input, src_mask, tgt_mask,
-                              src_padding_mask, tgt_padding_mask, src_padding_mask)
-    print('预测单例展示：')
-    print('logits_pred size: ', logits_pred.shape)
-    print(logits_pred[:, 0, :])
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
-    tgt_out_single = tgt_out[:, 0].reshape(-1)
-    logits_pred_single = logits_pred[:, 0, :].reshape(-1, logits_pred.shape[-1])
-    loss = loss_fn(logits_pred_single, tgt_out_single)
-    print('logits_pred_single size:', logits_pred_single.shape)
-    print('tgt_out_single size:', tgt_out_single.shape)
-    print(logits_pred_single)
-    print(tgt_out_single)
-    print(loss)
-
-    print('--------------eval-----------------')
-    memory = transformer.encode(src, src_mask).to(DEVICE)
-    print(memory.shape)
+    # transformer = Seq2SeqTransformer(num_encoder_layers=3,
+    #                                  num_decoder_layers=3,
+    #                                  emb_size=512,
+    #                                  n_head=8,
+    #                                  src_vocab_size=src_size,
+    #                                  tgt_vocab_size=tgt_size).to(DEVICE)
+    # logits_pred = transformer(src, tgt_input, src_mask, tgt_mask,
+    #                           src_padding_mask, tgt_padding_mask, src_padding_mask)
+    # print('预测单例展示：')
+    # print('logits_pred size: ', logits_pred.shape)
+    # print(logits_pred[:, 0, :])
+    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
+    # tgt_out_single = tgt_out[:, 0].reshape(-1)
+    # logits_pred_single = logits_pred[:, 0, :].reshape(-1, logits_pred.shape[-1])
+    # loss = loss_fn(logits_pred_single, tgt_out_single)
+    # print('logits_pred_single size:', logits_pred_single.shape)
+    # print('tgt_out_single size:', tgt_out_single.shape)
+    # print(logits_pred_single)
+    # print(tgt_out_single)
+    # print(loss)
+    #
+    # print('--------------eval-----------------')
+    # memory = transformer.encode(src, src_mask).to(DEVICE)
+    # print(memory.shape)
 
 
 # train_ops()
