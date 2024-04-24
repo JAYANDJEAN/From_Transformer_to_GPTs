@@ -1,8 +1,8 @@
 from tokenizers import decoders, models, normalizers, \
     pre_tokenizers, processors, trainers, Tokenizer
 
-# 使用 BPE 模型
-model = models.BPE()  # 未设置 vocab, 因为词表需要从数据中训练; 不需要 unk_token
+# 未设置 vocab, 因为词表需要从数据中训练; 不需要 unk_token
+model = models.BPE()
 tokenizer = Tokenizer(model)
 
 ################# GPT-2 Skip Normalization ##################
