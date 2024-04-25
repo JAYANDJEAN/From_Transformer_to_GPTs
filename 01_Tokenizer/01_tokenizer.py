@@ -11,6 +11,7 @@ tokenizer1 = get_tokenizer('spacy', language='en_core_web_sm')
 spacy 基本是按空格分割
 gpt 和 bert 都是按subword分。
 '''
+
 print(tokenizer0(corpus[0]))
 # ['Ein', 'Mann', 'in', 'grün', 'hält', 'eine', 'Gitarre', ',', 'während', 'der',
 # 'andere', 'Mann', 'sein', 'Hemd', 'ansieht', '.']

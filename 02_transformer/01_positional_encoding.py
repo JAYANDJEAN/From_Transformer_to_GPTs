@@ -23,6 +23,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pos_embedding[:, :x.size(1)]
 
 
+
 def positional_encoding(max_len, emb_size):
     pos_enc = np.zeros((max_len, emb_size))
     for k in range(max_len):

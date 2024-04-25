@@ -5,9 +5,7 @@ from datasets import load_dataset
 model = models.BPE()
 tokenizer = Tokenizer(model)
 
-################# GPT-2 Skip Normalization ##################
 
-################# Step1: Pre-tokenization ###################
 tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
 
 print(tokenizer.pre_tokenizer.pre_tokenize_str("This's me  ."))

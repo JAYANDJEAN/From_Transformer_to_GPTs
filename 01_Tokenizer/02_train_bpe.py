@@ -3,6 +3,7 @@ from tokenizers.models import BPE
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import BpeTrainer
 
+# 应该有bug，但还没检查出来
 tokenizer = Tokenizer(BPE())
 tokenizer.pre_tokenizer = Whitespace()
 trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
