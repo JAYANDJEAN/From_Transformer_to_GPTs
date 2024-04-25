@@ -1,7 +1,7 @@
 from tokenizers import decoders, models, normalizers, \
     pre_tokenizers, processors, trainers, Tokenizer
+from datasets import load_dataset
 
-# 未设置 vocab, 因为词表需要从数据中训练; 不需要 unk_token
 model = models.BPE()
 tokenizer = Tokenizer(model)
 
@@ -18,7 +18,7 @@ special_tokens = ["<|endoftext|>"]  # end-of-text token
 trainer = trainers.BpeTrainer(vocab_size=25000, special_tokens=special_tokens)
 
 ################# Step3: dataset ###################
-from datasets import load_dataset  # pip install datasets
+
 
 dataset = load_dataset("wikitext", name="wikitext-2-raw-v1", split="train")
 

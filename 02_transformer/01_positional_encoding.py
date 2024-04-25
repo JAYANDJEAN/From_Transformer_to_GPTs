@@ -27,8 +27,8 @@ def positional_encoding(max_len, emb_size):
     pos_enc = np.zeros((max_len, emb_size))
     for k in range(max_len):
         for i in range(0, emb_size, 2):
-            pos_enc[k, i] = np.sin(k / (10000 ** ((2 * i) / emb_size)))
-            pos_enc[k, i + 1] = np.cos(k / (10000 ** ((2 * i) / emb_size)))
+            pos_enc[k, i] = np.sin(k / (100 ** ((2 * i) / emb_size)))
+            pos_enc[k, i + 1] = np.cos(k / (100 ** ((2 * i) / emb_size)))
     return pos_enc
 
 
