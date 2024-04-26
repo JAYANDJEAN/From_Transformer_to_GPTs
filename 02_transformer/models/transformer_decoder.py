@@ -16,7 +16,7 @@ class DecoderLayer(nn.Module):
 
         self.dropout = nn.Dropout(p=drop_prob)
 
-    def forward(self, dec, enc, trg_mask, src_mask):
+    def forward(self, dec, enc, src_mask, trg_mask):
         # Compute self attention
         x = self.self_attention(q=dec, k=dec, v=dec, mask=trg_mask)
         x = self.dropout(x)
