@@ -1,9 +1,6 @@
 from torch import nn
 import torch
-from transformer_encoder import EncoderLayer
-from transformer_decoder import DecoderLayer
-from .positional_encoding import PositionalEncoding
-from .token_embedding import TokenEmbedding
+from models import *
 
 
 class Seq2SeqTransformer(nn.Module):

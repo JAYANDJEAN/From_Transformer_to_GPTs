@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 from torch import Tensor
-from .positional_encoding import PositionalEncoding
-from .token_embedding import TokenEmbedding
+from models import PositionalEncoding, TokenEmbedding
 
 
 class Seq2SeqTransformer(nn.Module):
