@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from timeit import default_timer as timer
 from typing import Iterable, List, Dict
-from models.transformer_torch import Seq2SeqTransformer
+from transformer_torch import Seq2SeqTransformer
 
 
 SPECIAL_IDS = {'<unk>': 0, '<pad>': 1, '<bos>': 2, '<eos>': 3}

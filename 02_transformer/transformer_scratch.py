@@ -44,6 +44,5 @@ class Seq2SeqTransformer(nn.Module):
         for layer in self.decoder_layers:
             tgt_emb = layer(tgt_emb, src_emb, src_mask, tgt_mask)
 
-        # pass to LM head
         output = self.linear(tgt_emb)
         return output
