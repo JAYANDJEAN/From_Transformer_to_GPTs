@@ -2,17 +2,15 @@ from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 from torchtext.datasets import multi30k, Multi30k
 import torch
-import torch.nn as nn
 from torch import Tensor
-from torch.nn import Transformer
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
-import math
+
 from timeit import default_timer as timer
 from typing import Iterable, List, Dict
-import warnings
+from models.transformer_torch import Seq2SeqTransformer
 
-warnings.filterwarnings("ignore")
+
 SPECIAL_IDS = {'<unk>': 0, '<pad>': 1, '<bos>': 2, '<eos>': 3}
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 src_l = 'de'
@@ -122,86 +120,6 @@ def get_data(batch_size: int):
     val_dataloader = DataLoader(val, batch_size=batch_size, collate_fn=collate_fn)
 
     return func_t2i, func_vocabs, train_dataloader, val_dataloader
-
-
-class PositionalEncoding(nn.Module):
-    def __init__(self,
-                 emb_size: int,
-                 dropout: float,
-                 max_len: int = 5000):
-        super(PositionalEncoding, self).__init__()
-        den = torch.exp(- torch.arange(0, emb_size, 2) * math.log(10000) / emb_size)
-        pos = torch.arange(0, max_len).reshape(max_len, 1)
-        pos_embedding = torch.zeros((max_len, emb_size))
-        pos_embedding[:, 0::2] = torch.sin(pos * den)
-        pos_embedding[:, 1::2] = torch.cos(pos * den)
-        pos_embedding = pos_embedding.unsqueeze(-2)
-        self.dropout = nn.Dropout(dropout)
-        self.register_buffer('pos_embedding', pos_embedding)
-
-    def forward(self, token_embedding: Tensor):
-        return self.dropout(token_embedding + self.pos_embedding[:token_embedding.size(0), :])
-
-
-class TokenEmbedding(nn.Module):
-    def __init__(self, vocab_size: int, emb_size: int):
-        super(TokenEmbedding, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, emb_size)
-        self.emb_size = emb_size
-
-    def forward(self, tokens: Tensor):
-        return self.embedding(tokens.long()) * math.sqrt(self.emb_size)
-
-
-class Seq2SeqTransformer(nn.Module):
-    def __init__(self,
-                 num_encoder_layers: int,
-                 num_decoder_layers: int,
-                 emb_size: int,
-                 n_head: int,
-                 src_vocab_size: int,
-                 tgt_vocab_size: int,
-                 dim_feedforward: int = 512,
-                 dropout: float = 0.1):
-        super(Seq2SeqTransformer, self).__init__()
-        self.transformer = Transformer(d_model=emb_size,
-                                       nhead=n_head,
-                                       num_encoder_layers=num_encoder_layers,
-                                       num_decoder_layers=num_decoder_layers,
-                                       dim_feedforward=dim_feedforward,
-                                       dropout=dropout)
-        self.generator = nn.Linear(emb_size, tgt_vocab_size)
-        self.src_tok_emb = TokenEmbedding(src_vocab_size, emb_size)
-        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
-        self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
-
-        self.initialize()
-
-    def initialize(self):
-        for para in self.parameters():
-            if para.dim() > 1:
-                nn.init.xavier_uniform_(para)
-
-    def forward(self,
-                src: Tensor,
-                trg: Tensor,
-                src_mask: Tensor,
-                tgt_mask: Tensor,
-                src_padding_mask: Tensor,
-                tgt_padding_mask: Tensor,
-                memory_key_padding_mask: Tensor):
-        # src = (N, S), (N, S, E)
-        src_emb = self.positional_encoding(self.src_tok_emb(src))
-        tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
-        outs = self.transformer(src_emb, tgt_emb, src_mask, tgt_mask, None,
-                                src_padding_mask, tgt_padding_mask, memory_key_padding_mask)
-        return self.generator(outs)
-
-    def encode(self, src: Tensor, src_mask: Tensor):
-        return self.transformer.encoder(self.positional_encoding(self.src_tok_emb(src)), src_mask)
-
-    def decode(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
-        return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgt_mask)
 
 
 def train_ops():
@@ -319,12 +237,6 @@ def show_parameters():
     '''
     原始的句子的shape是(S, N)，经过embedding，是(S, N, E)，加上pos_embedding，依然是(S, N, E)
     '''
-    src_tok_emb = TokenEmbedding(src_size, EMB_SIZE)
-    positional_encoding = PositionalEncoding(EMB_SIZE, dropout=0.1)
-    src_emb = positional_encoding(src_tok_emb(src))
-    print(src.shape)
-    print(src_tok_emb(src).shape)
-    print(src_emb.shape)
 
     # 模型定义，没什么好讲的
     transformer = Seq2SeqTransformer(num_encoder_layers=3,
@@ -349,6 +261,6 @@ def show_parameters():
     print(memory.shape)
 
 
-train_ops()
+# train_ops()
 
-# show_parameters()
+show_parameters()
