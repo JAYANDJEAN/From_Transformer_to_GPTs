@@ -152,7 +152,6 @@ def show_parameters():
     print(memory.shape)
 
 
-
 # train_ops()
 
 show_parameters()
