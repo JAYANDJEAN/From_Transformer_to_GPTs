@@ -108,6 +108,7 @@ def show_parameters():
             T is the target sequence length, 
             N is the batch size, 
             E is the feature number
+            
             src: (S, E) for unbatched input, (S, N, E) if batch_first=False or (N, S, E) if batch_first=True.
             tgt: (T, E) for unbatched input, (T, N, E) if batch_first=False or (N, T, E) if batch_first=True.
             src_mask: (S, S) or (N⋅num_heads, S, S).
