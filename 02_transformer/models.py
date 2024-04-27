@@ -202,20 +202,16 @@ def test_scale_dot_product_attention():
     k = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
     v = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
     attended_values, attention_weights = attention(q, k, v)
-    print("Without Mask:")
-    print("Attended Values Shape:", attended_values.shape)  # 预期输出：(batch_size, n_head, seq_length, d_model)
-    print("Attention Weights Shape:", attention_weights.shape)  # 预期输出：(batch_size, n_head, seq_length, seq_length)
+    assert attended_values.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
+    assert attention_weights.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, SEQ_LEN)
 
-    # 创建测试 mask 数据
     mask = torch.zeros(SEQ_LEN, SEQ_LEN, dtype=torch.bool)
     mask[:, -1] = 1  # 在最后一个位置上添加 mask，用于测试
 
     # 测试有 mask 的情况
     attended_values_masked, attention_weights_masked = attention(q, k, v, mask)
-    print("\nWith Mask:")
-    print("Attended Values Shape:", attended_values_masked.shape)  # 预期输出：(batch_size, n_head, seq_length, d_model)
-    print("Attention Weights Shape:",
-          attention_weights_masked.shape)  # 预期输出：(batch_size, n_head, seq_length, seq_length)
+    assert attended_values_masked.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
+    assert attention_weights_masked.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, SEQ_LEN)
 
 
 def test_multi_head_attention():
@@ -225,7 +221,7 @@ def test_multi_head_attention():
     k = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
     v = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
     out = model(q, k, v)
-    print(out.shape)
+    assert out.shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
 
 
 def test_encoder_layer():
