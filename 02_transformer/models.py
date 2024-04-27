@@ -47,6 +47,9 @@ class ScaleDotProductAttention(nn.Module):
         # q, k, v: [batch_size, n_head, seq_len, d_model]
         # mask = [seq_len, seq_len]
         score = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(k.size(-1), dtype=torch.float32))
+        print('loc1:')
+        print(q.shape)
+        print(mask.shape)
         if mask is not None:
             score = score.masked_fill(mask == 0, -1e9)  # Mask value chosen to be large negative
         attention_weights = F.softmax(score, dim=-1)

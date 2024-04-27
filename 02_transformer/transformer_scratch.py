@@ -1,5 +1,3 @@
-from torch import nn
-import torch
 from models import *
 
 
@@ -21,21 +19,24 @@ class Seq2SeqTransformer(nn.Module):
         self.positional_encoding = PositionalEncoding(100, emb_size, dropout=dropout, batch_first=batch_first)
 
         self.encoder_layers = nn.ModuleList([EncoderLayer(d_model=emb_size,
-                                                          ffn_hidden=dim_feedforward,
+                                                          dim_feedforward=dim_feedforward,
                                                           n_head=n_head,
-                                                          drop_prob=dropout)
+                                                          dropout=dropout)
                                              for _ in range(num_encoder_layers)])
 
         self.decoder_layers = nn.ModuleList([DecoderLayer(d_model=emb_size,
-                                                          ffn_hidden=dim_feedforward,
+                                                          dim_feedforward=dim_feedforward,
                                                           n_head=n_head,
-                                                          drop_prob=dropout)
+                                                          dropout=dropout)
                                              for _ in range(num_decoder_layers)])
 
         self.linear = nn.Linear(emb_size, tgt_vocab_size)
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         src_emb = self.positional_encoding(self.src_tok_emb(src))
+        print('!!!!!!')
+        print(src_emb.shape)
+        print(src_mask.shape)
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
 
         for layer in self.encoder_layers:

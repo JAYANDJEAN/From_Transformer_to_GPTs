@@ -10,12 +10,15 @@ from typing import Iterable, List, Dict
 SPECIAL_IDS = {'<unk>': 0, '<pad>': 1, '<bos>': 2, '<eos>': 3}
 
 
+# batch_first = False
+
 def generate_square_subsequent_mask(sz: int):
     mask = (torch.triu(torch.ones((sz, sz))) == 1).transpose(0, 1)
     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
     return mask
 
 
+# 需要加入batch_first参数
 def create_mask(src: Tensor, tgt: Tensor):
     src_seq_len = src.shape[0]
     tgt_seq_len = tgt.shape[0]
