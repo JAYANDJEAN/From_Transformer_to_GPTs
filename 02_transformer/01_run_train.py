@@ -8,7 +8,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def show_parameters():
     BATCH_SIZE = 128
-    EMB_SIZE = 512
+    D_MODEL = 512
     print('--------------------------data------------------------------------')
     '''
     text_to_indices: 将文本转成编号序列
@@ -76,7 +76,7 @@ def show_parameters():
     # 模型定义，没什么好讲的
     transformer = TransformerTorch(num_encoder_layers=3,
                                    num_decoder_layers=3,
-                                   emb_size=EMB_SIZE,
+                                   d_model=D_MODEL,
                                    n_head=8,
                                    src_vocab_size=src_size,
                                    tgt_vocab_size=tgt_size
@@ -138,7 +138,7 @@ def train_and_translate(model_name, num_epochs):
     if model_name == 'torch':
         transformer = TransformerTorch(num_encoder_layers=3,
                                        num_decoder_layers=3,
-                                       emb_size=512,
+                                       d_model=512,
                                        n_head=8,
                                        src_vocab_size=len(vocabs[src_lang]),
                                        tgt_vocab_size=len(vocabs[tgt_lang])
@@ -146,7 +146,7 @@ def train_and_translate(model_name, num_epochs):
     elif model_name == 'scratch':
         transformer = TransformerScratch(num_encoder_layers=3,
                                          num_decoder_layers=3,
-                                         emb_size=512,
+                                         d_model=512,
                                          n_head=8,
                                          src_vocab_size=len(vocabs[src_lang]),
                                          tgt_vocab_size=len(vocabs[tgt_lang])
