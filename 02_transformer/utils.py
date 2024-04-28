@@ -116,14 +116,14 @@ def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, 
 if __name__ == '__main__':
     from models import TransformerTorch
 
-    src_sentence = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
-    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(128)
+    src_ = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
+    t2i, voc, train_loader, eval_loader = prepare_dataset(128)
     transformer = TransformerTorch(num_encoder_layers=3,
                                    num_decoder_layers=3,
-                                   emb_size=512,
+                                   d_model=512,
                                    n_head=8,
-                                   src_vocab_size=len(vocabs[src_lang]),
-                                   tgt_vocab_size=len(vocabs[tgt_lang])
+                                   src_vocab_size=len(voc[src_lang]),
+                                   tgt_vocab_size=len(voc[tgt_lang])
                                    ).to('cpu')
 
-    print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, 'cpu'))
+    print("Translated sentence:", translate(transformer, src_, t2i, voc, 'cpu'))

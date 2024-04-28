@@ -1,9 +1,14 @@
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
-import math
 from torch import Tensor
+import torch.nn as nn
+from modelsummary import summary
+
+'''
+包含两种实现方式，一种是基于torch，手写，一种是直接点用nn.Transformer
+'''
 
 
 class TokenEmbedding(nn.Module):
@@ -400,6 +405,10 @@ def transformer():
     tgt_mask = torch.randn(TGT_SEQ_LEN, TGT_SEQ_LEN)
     src_padding_mask = torch.randn(BATCH_SIZE, SEQ_LEN)
     tgt_padding_mask = torch.randn(BATCH_SIZE, TGT_SEQ_LEN)
+
+    print('-------model_scratch---------')
+    summary(model_scratch, src, tgt, src_mask, tgt_mask, show_input=True)
+
     out1 = model_scratch(src, tgt, src_mask, tgt_mask)
     out2 = model_torch(src, tgt, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
     assert out1.shape == (BATCH_SIZE, TGT_SEQ_LEN, tgt_vocab_size)
