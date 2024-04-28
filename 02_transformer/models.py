@@ -4,14 +4,6 @@ import torch
 import torch.nn as nn
 import math
 from torch import Tensor
-import torch.nn.functional as F
-
-'''
-if batch_first=False 
-data after TokenEmbedding is (SEQ_LEN, BATCH_SIZE, D_MODEL)
-after PositionalEncoding is still (SEQ_LEN, BATCH_SIZE, D_MODEL)
-next is MultiHeadAttention, so MultiHeadAttention need to consider batch_first
-'''
 
 
 class TokenEmbedding(nn.Module):
@@ -51,14 +43,16 @@ class ScaleDotProductAttention(nn.Module):
     def __init__(self):
         super(ScaleDotProductAttention, self).__init__()
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask=None):
+    @staticmethod
+    def forward(q: Tensor, k: Tensor, v: Tensor, mask=None):
         # q, k, v: [batch_size, n_head, seq_len, d_tensor]
         # and n_head * d_tensor = d_model
         # mask = [seq_len, seq_len]
         score = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(k.size(-1), dtype=torch.float32))
         if mask is not None:
-            score = score.masked_fill(mask == 0, -1e9)
-        attention_weights = F.softmax(score, dim=-1)
+            # score = score.masked_fill(mask != 0, -1e9)
+            score += mask
+        attention_weights = torch.softmax(score, dim=-1)
         attended_values = torch.matmul(attention_weights, v)
         return attended_values, attention_weights
 
@@ -325,6 +319,7 @@ def positional_encoding():
 
 def scale_dot_product_attention():
     attention = ScaleDotProductAttention()
+    SEQ_LEN = 5
 
     q = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
     k = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
@@ -332,14 +327,24 @@ def scale_dot_product_attention():
     attended_values, attention_weights = attention(q, k, v)
     assert attended_values.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
     assert attention_weights.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, SEQ_LEN)
+    print('weights before mask:')
+    print(attention_weights[0, 0, :, :])
 
-    mask = torch.zeros(SEQ_LEN, SEQ_LEN, dtype=torch.bool)
-    mask[:, -1] = 1  # 在最后一个位置上添加 mask，用于测试
+    mask = torch.triu(torch.full((SEQ_LEN, SEQ_LEN), float('-inf')), diagonal=1)
+    print('mask tensor is: ')
+    print(mask)
 
-    # 测试有 mask 的情况
     attended_values_masked, attention_weights_masked = attention(q, k, v, mask)
+
     assert attended_values_masked.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
     assert attention_weights_masked.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, SEQ_LEN)
+    print('weights after mask:')
+    print(attention_weights_masked[0, 0, :, :])
+
+    from torch.nn.functional import scaled_dot_product_attention
+    print('check result')
+    print(scaled_dot_product_attention(q, k, v, attn_mask=mask)[0, 0, :, :5])
+    print(attended_values_masked[0, 0, :, :5])
 
 
 def multi_head_attention():
@@ -371,23 +376,24 @@ def decoder_layer():
 
 
 def transformer():
-    model_scratch = TransformerScratch(3, 3, D_MODEL, 8, 1000, 1000)
-    model_torch = TransformerTorch(3, 3, D_MODEL, 8, 1000, 1000)
+    src_vocab_size = 1000
+    tgt_vocab_size = 1200
+    model_scratch = TransformerScratch(3, 3, D_MODEL, 8, src_vocab_size, tgt_vocab_size)
+    model_torch = TransformerTorch(3, 3, D_MODEL, 8, src_vocab_size, tgt_vocab_size)
     src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.int)
     tgt = torch.randint(low=0, high=100, size=(BATCH_SIZE, TGT_SEQ_LEN), dtype=torch.int)
     src_mask = torch.randn(SEQ_LEN, SEQ_LEN)
     tgt_mask = torch.randn(TGT_SEQ_LEN, TGT_SEQ_LEN)
     src_padding_mask = torch.randn(BATCH_SIZE, SEQ_LEN)
     tgt_padding_mask = torch.randn(BATCH_SIZE, TGT_SEQ_LEN)
-
-    print(model_scratch(src, tgt, src_mask, tgt_mask).shape)
-    print(model_torch(src, tgt, src_mask, tgt_mask,
-                      src_padding_mask, tgt_padding_mask,
-                      src_padding_mask).shape)
+    out1 = model_scratch(src, tgt, src_mask, tgt_mask)
+    out2 = model_torch(src, tgt, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
+    assert out1.shape == (BATCH_SIZE, TGT_SEQ_LEN, tgt_vocab_size)
+    assert out2.shape == (BATCH_SIZE, TGT_SEQ_LEN, tgt_vocab_size)
 
 
 if __name__ == '__main__':
     # test_positional_encoding()
     # test_scale_dot_product_attention()
     # multi_head_attention()
-    positional_encoding()
+    scale_dot_product_attention()

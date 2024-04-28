@@ -1,12 +1,9 @@
 import torch
 from timeit import default_timer as timer
 from models import TransformerTorch
-from utils import create_mask, get_data, translate, SPECIAL_IDS
+from utils import generate_mask, get_data, translate, SPECIAL_IDS
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-# batch_first = False
 
 
 def train_ops():
@@ -18,12 +15,16 @@ def train_ops():
             model.eval()
 
         for src, tgt in dataloader:
-            tgt_input = tgt[:-1, :].to(DEVICE)
-            tgt_out = tgt[1:, :].to(DEVICE)
-            src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input)
+            src = src.to(DEVICE)
+            tgt_input = tgt[:, :-1].to(DEVICE)
+            tgt_out = tgt[:, 1:].to(DEVICE)
+            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
+            tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
+            src_padding_mask = (src == SPECIAL_IDS['<pad>']).to(DEVICE)
+            tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>']).to(DEVICE)
+
             tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                src_padding_mask, tgt_padding_mask,
-                                src_padding_mask)
+                                src_padding_mask, tgt_padding_mask, src_padding_mask)
             if tp == 'train':
                 optimizer.zero_grad()
                 loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
@@ -42,13 +43,13 @@ def train_ops():
 
     text_to_indices, vocabs, train_loader, eval_loader = get_data(BATCH_SIZE)
 
-    transformer = Seq2SeqTransformer(num_encoder_layers=3,
-                                     num_decoder_layers=3,
-                                     emb_size=512,
-                                     n_head=8,
-                                     src_vocab_size=len(vocabs[src_l]),
-                                     tgt_vocab_size=len(vocabs[tgt_l])
-                                     ).to(DEVICE)
+    transformer = TransformerTorch(num_encoder_layers=3,
+                                   num_decoder_layers=3,
+                                   emb_size=512,
+                                   n_head=8,
+                                   src_vocab_size=len(vocabs[src_l]),
+                                   tgt_vocab_size=len(vocabs[tgt_l])
+                                   ).to(DEVICE)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
 
@@ -61,8 +62,8 @@ def train_ops():
                f"Val loss: {val_loss:.3f}, "
                f"Epoch time = {(end_time - start_time):.3f}s"))
 
-    src_sentence = "Eine Gruppe von Menschen steht vor einem Iglu ."
-    print(translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
+    # src_sentence = "Eine Gruppe von Menschen steht vor einem Iglu ."
+    # print(translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
 def show_parameters():
@@ -78,15 +79,13 @@ def show_parameters():
     text_to_indices, vocabs, train_loader, eval_loader = get_data(BATCH_SIZE)
     src_size, tgt_size = len(vocabs[src_l]), len(vocabs[tgt_l])
     _, (src, tgt) = next(enumerate(train_loader))
-    print('src size: ', src.shape)  # torch.Size([27, 128]) 最长句子是包含27个token
+    print('src size: ', src.shape)
     print('tgt size: ', tgt.shape)  # torch.Size([24, 128])
     print(src[0, :])
-    # tensor([2, 21, 85, 257, 31, 87, 22, 94, 7, 16, 112, 7910, 3209, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
     print(tgt[0, :])
-    # tensor([2, 19, 25, 15, 1169, 808, 17, 57, 84, 336, 1339, 5, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
-    # 测试文本转序号的功能
-    print(text_to_indices['en']('A young man wearing blue carries equipment across a street.'))
+    print(text_to_indices['de']('Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche.'))
+    print(text_to_indices['en']('Two young, White males are outside near many bushes.'))
     for i in range(5):
         print(i, vocabs['en'].lookup_token(i))
 
@@ -131,13 +130,13 @@ def show_parameters():
     '''
 
     # 模型定义，没什么好讲的
-    transformer = Seq2SeqTransformer(num_encoder_layers=3,
-                                     num_decoder_layers=3,
-                                     emb_size=EMB_SIZE,
-                                     n_head=8,
-                                     src_vocab_size=src_size,
-                                     tgt_vocab_size=tgt_size
-                                     ).to(DEVICE)
+    transformer = TransformerTorch(num_encoder_layers=3,
+                                   num_decoder_layers=3,
+                                   emb_size=EMB_SIZE,
+                                   n_head=8,
+                                   src_vocab_size=src_size,
+                                   tgt_vocab_size=tgt_size
+                                   ).to(DEVICE)
     logits_pred = transformer(src, tgt_input, src_mask, tgt_mask,
                               src_padding_mask, tgt_padding_mask,
                               src_padding_mask)
@@ -155,4 +154,4 @@ def show_parameters():
 
 # train_ops()
 
-show_parameters()
+train_ops()

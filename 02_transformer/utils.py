@@ -10,23 +10,8 @@ from typing import Iterable, List, Dict
 SPECIAL_IDS = {'<unk>': 0, '<pad>': 1, '<bos>': 2, '<eos>': 3}
 
 
-# batch_first = False
-
-def generate_square_subsequent_mask(sz: int):
-    mask = (torch.triu(torch.ones((sz, sz))) == 1).transpose(0, 1)
-    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-    return mask
-
-
-# 需要加入batch_first参数
-def create_mask(src: Tensor, tgt: Tensor):
-    src_seq_len = src.shape[1]
-    tgt_seq_len = tgt.shape[1]
-    tgt_mask = generate_square_subsequent_mask(tgt_seq_len)
-    src_mask = torch.zeros((src_seq_len, src_seq_len)).type(torch.bool)
-    src_padding_mask = (src == SPECIAL_IDS['<pad>'])
-    tgt_padding_mask = (tgt == SPECIAL_IDS['<pad>'])
-    return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
+def generate_mask(sz: int):
+    return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
 def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, vocabs: Dict, device):
@@ -42,7 +27,7 @@ def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, 
     memory = model.encode(src_tensor, src_mask).to(device)
     ys = torch.ones(1, 1).fill_(start_symbol).type(torch.long).to(device)
     for i in range(max_len - 1):
-        tgt_mask = (generate_square_subsequent_mask(ys.size(0)).type(torch.bool)).to(device)
+        tgt_mask = (generate_mask(ys.size(0)).type(torch.bool)).to(device)
         out = model.decode(ys, memory, tgt_mask)
         out = out.transpose(0, 1)
         prob = model.generator(out[:, -1])
