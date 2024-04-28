@@ -96,7 +96,7 @@ def show_parameters():
     print(memory.shape)
 
 
-def train_and_translate(model_name):
+def train_and_translate(model_name, num_epochs):
     def _epoch(model, dataloader, tp):
         losses = 0
         if tp == 'train':
@@ -133,8 +133,6 @@ def train_and_translate(model_name):
         return losses / len(list(dataloader))
 
     BATCH_SIZE = 128
-    NUM_EPOCHS = 18
-
     text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
 
     if model_name == 'torch':
@@ -160,7 +158,7 @@ def train_and_translate(model_name):
     min_train_loss = float('inf')
     model_path = 'best_model_' + model_name + '.pth'
 
-    for epoch in range(1, NUM_EPOCHS + 1):
+    for epoch in range(1, num_epochs + 1):
         start_time = timer()
         train_loss = _epoch(transformer, train_loader, 'train')
         if train_loss < min_train_loss:
@@ -178,4 +176,4 @@ def train_and_translate(model_name):
     print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
-train_and_translate('torch')
+train_and_translate('scratch', 20)

@@ -175,7 +175,7 @@ class TransformerScratch(nn.Module):
 
     def __init__(self, num_encoder_layers: int,
                  num_decoder_layers: int,
-                 emb_size: int,
+                 d_model: int,
                  n_head: int,
                  src_vocab_size: int,
                  tgt_vocab_size: int,
@@ -184,43 +184,49 @@ class TransformerScratch(nn.Module):
                  batch_first=True):
         super().__init__()
         assert batch_first, "must batch first"
-        self.src_tok_emb = TokenEmbedding(src_vocab_size, emb_size)
-        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
-        self.positional_encoding = PositionalEncoding(100, emb_size, dropout=dropout, batch_first=batch_first)
+        self.src_tok_emb = TokenEmbedding(src_vocab_size, d_model)
+        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, d_model)
+        self.positional_encoding = PositionalEncoding(100, d_model, dropout=dropout, batch_first=batch_first)
 
-        self.encoder_layers = nn.ModuleList([EncoderLayer(d_model=emb_size,
+        self.encoder_layers = nn.ModuleList([EncoderLayer(d_model=d_model,
                                                           dim_feedforward=dim_feedforward,
                                                           n_head=n_head,
                                                           dropout=dropout)
                                              for _ in range(num_encoder_layers)])
 
-        self.decoder_layers = nn.ModuleList([DecoderLayer(d_model=emb_size,
+        self.decoder_layers = nn.ModuleList([DecoderLayer(d_model=d_model,
                                                           dim_feedforward=dim_feedforward,
                                                           n_head=n_head,
                                                           dropout=dropout)
                                              for _ in range(num_decoder_layers)])
 
-        self.linear = nn.Linear(emb_size, tgt_vocab_size)
+        self.generator = nn.Linear(d_model, tgt_vocab_size)
 
-    def forward(self, src, tgt, src_mask, tgt_mask):
+    def encoder(self, src: Tensor, src_mask: Tensor):
         src_emb = self.positional_encoding(self.src_tok_emb(src))
-        tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
-
         for layer in self.encoder_layers:
             src_emb = layer(src_emb, src_mask)
 
-        for layer in self.decoder_layers:
-            tgt_emb = layer(tgt_emb, src_emb, tgt_mask)
+        return src_emb
 
-        output = self.linear(tgt_emb)
-        return output
+    def decoder(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
+        tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
+        for layer in self.decoder_layers:
+            tgt_emb = layer(tgt_emb, memory, tgt_mask)
+
+        return tgt_emb
+
+    def forward(self, src: Tensor, tgt: Tensor, src_mask: Tensor, tgt_mask: Tensor):
+        memory = self.encoder(src, src_mask)
+        outs = self.decoder(tgt, memory, tgt_mask)
+        return self.generator(outs)
 
 
 class TransformerTorch(nn.Module):
     def __init__(self,
                  num_encoder_layers: int,
                  num_decoder_layers: int,
-                 emb_size: int,
+                 d_model: int,
                  n_head: int,
                  src_vocab_size: int,
                  tgt_vocab_size: int,
@@ -228,17 +234,17 @@ class TransformerTorch(nn.Module):
                  dropout: float = 0.1,
                  batch_first=True):
         super().__init__()
-        self.transformer = nn.Transformer(d_model=emb_size,
+        self.transformer = nn.Transformer(d_model=d_model,
                                           nhead=n_head,
                                           num_encoder_layers=num_encoder_layers,
                                           num_decoder_layers=num_decoder_layers,
                                           dim_feedforward=dim_feedforward,
                                           dropout=dropout,
                                           batch_first=batch_first)
-        self.generator = nn.Linear(emb_size, tgt_vocab_size)
-        self.src_tok_emb = TokenEmbedding(src_vocab_size, emb_size)
-        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
-        self.positional_encoding = PositionalEncoding(100, emb_size, dropout=dropout, batch_first=batch_first)
+        self.generator = nn.Linear(d_model, tgt_vocab_size)
+        self.src_tok_emb = TokenEmbedding(src_vocab_size, d_model)
+        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, d_model)
+        self.positional_encoding = PositionalEncoding(100, d_model, dropout=dropout, batch_first=batch_first)
         self.initialize()
 
     def initialize(self):
