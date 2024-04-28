@@ -280,16 +280,6 @@ class TransformerTorch(nn.Module):
         return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgt_mask)
 
 
-MAX_LEN = 100
-D_MODEL = 512
-BATCH_SIZE = 128
-SEQ_LEN = 23
-N_HEAD = 8
-DIM_FF = 256
-DROPOUT = 0.1
-TGT_SEQ_LEN = 17
-
-
 def positional_encoding():
     def positional_encoding_loop(max_len, d_model):
         pos_enc = np.zeros((max_len, d_model))
@@ -416,7 +406,13 @@ def transformer():
 
 
 if __name__ == '__main__':
-    # test_positional_encoding()
-    # test_scale_dot_product_attention()
-    # multi_head_attention()
+    MAX_LEN = 100
+    D_MODEL = 512
+    BATCH_SIZE = 128
+    SEQ_LEN = 23
+    N_HEAD = 8
+    DIM_FF = 256
+    DROPOUT = 0.1
+    TGT_SEQ_LEN = 17
+
     transformer()

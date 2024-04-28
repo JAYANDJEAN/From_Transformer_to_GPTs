@@ -113,6 +113,10 @@ def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, 
     return " ".join([i for i in tgt_words if i not in SPECIAL_IDS.keys()])
 
 
+def bleu():
+    pass
+
+
 if __name__ == '__main__':
     from models import TransformerTorch
 
