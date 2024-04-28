@@ -14,6 +14,7 @@ def generate_mask(sz: int):
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
+# need check
 def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, vocabs: Dict, device):
     model.eval()
     src_lang = 'de'

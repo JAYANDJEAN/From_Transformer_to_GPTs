@@ -52,10 +52,15 @@ def train_ops():
                                    ).to(DEVICE)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
+    min_train_loss = float('inf')
 
     for epoch in range(1, NUM_EPOCHS + 1):
         start_time = timer()
         train_loss = _epoch(transformer, train_loader, 'train')
+        if train_loss < min_train_loss:
+            min_train_loss = train_loss
+            torch.save(transformer.state_dict(), 'best_model.pth')
+            print("Model saved at epoch:", epoch)
         end_time = timer()
         val_loss = _epoch(transformer, eval_loader, 'eval')
         print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
@@ -80,7 +85,7 @@ def show_parameters():
     src_size, tgt_size = len(vocabs[src_l]), len(vocabs[tgt_l])
     _, (src, tgt) = next(enumerate(train_loader))
     print('src size: ', src.shape)
-    print('tgt size: ', tgt.shape)  # torch.Size([24, 128])
+    print('tgt size: ', tgt.shape)
     print(src[0, :])
     print(tgt[0, :])
 
@@ -118,7 +123,10 @@ def show_parameters():
             memory_key_padding_mask: (S) for unbatched input otherwise (N, S).
             output: (T, E) for unbatched input, (T, N, E) if batch_first=False or (N, T, E) if batch_first=True.
         '''
-    src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input)
+    src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
+    tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
+    src_padding_mask = (src == SPECIAL_IDS['<pad>']).to(DEVICE)
+    tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>']).to(DEVICE)
     print(src_mask.shape)  # torch.Size([27, 27])
     print(tgt_mask.shape)  # torch.Size([23, 23])
     print(src_padding_mask.shape)  # torch.Size([128, 27])
@@ -154,4 +162,4 @@ def show_parameters():
 
 # train_ops()
 
-train_ops()
+show_parameters()

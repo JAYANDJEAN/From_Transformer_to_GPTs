@@ -79,7 +79,8 @@ class MultiHeadAttention(nn.Module):
         x = x.view(batch_size, length, self.n_head, d_tensor).transpose(1, 2)
         return x
 
-    def concat(self, x: Tensor):
+    @staticmethod
+    def concat(x: Tensor):
         """
         inverse function of self.split(tensor : torch.Tensor)
         :param x: [batch_size, head, length, d_tensor]
@@ -376,10 +377,16 @@ def decoder_layer():
 
 
 def transformer():
+    def count_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
     src_vocab_size = 1000
     tgt_vocab_size = 1200
     model_scratch = TransformerScratch(3, 3, D_MODEL, 8, src_vocab_size, tgt_vocab_size)
     model_torch = TransformerTorch(3, 3, D_MODEL, 8, src_vocab_size, tgt_vocab_size)
+    print("Total trainable parameters:", count_parameters(model_scratch))
+    print("Total trainable parameters:", count_parameters(model_torch))
+
     src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.int)
     tgt = torch.randint(low=0, high=100, size=(BATCH_SIZE, TGT_SEQ_LEN), dtype=torch.int)
     src_mask = torch.randn(SEQ_LEN, SEQ_LEN)
@@ -396,4 +403,4 @@ if __name__ == '__main__':
     # test_positional_encoding()
     # test_scale_dot_product_attention()
     # multi_head_attention()
-    scale_dot_product_attention()
+    transformer()
