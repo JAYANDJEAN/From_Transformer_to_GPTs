@@ -187,7 +187,6 @@ class TransformerScratch(nn.Module):
         self.src_tok_emb = TokenEmbedding(src_vocab_size, d_model)
         self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, d_model)
         self.positional_encoding = PositionalEncoding(100, d_model, dropout=dropout, batch_first=batch_first)
-
         self.encoder_layers = nn.ModuleList([EncoderLayer(d_model=d_model,
                                                           dim_feedforward=dim_feedforward,
                                                           n_head=n_head,
@@ -199,26 +198,28 @@ class TransformerScratch(nn.Module):
                                                           n_head=n_head,
                                                           dropout=dropout)
                                              for _ in range(num_decoder_layers)])
-
         self.generator = nn.Linear(d_model, tgt_vocab_size)
 
-    def encoder(self, src: Tensor, src_mask: Tensor):
+    def initialize(self):
+        for para in self.parameters():
+            if para.dim() > 1:
+                nn.init.xavier_uniform_(para)
+
+    def encode(self, src: Tensor, src_mask: Tensor):
         src_emb = self.positional_encoding(self.src_tok_emb(src))
         for layer in self.encoder_layers:
             src_emb = layer(src_emb, src_mask)
-
         return src_emb
 
-    def decoder(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
+    def decode(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
         for layer in self.decoder_layers:
             tgt_emb = layer(tgt_emb, memory, tgt_mask)
-
         return tgt_emb
 
     def forward(self, src: Tensor, tgt: Tensor, src_mask: Tensor, tgt_mask: Tensor):
-        memory = self.encoder(src, src_mask)
-        outs = self.decoder(tgt, memory, tgt_mask)
+        memory = self.encode(src, src_mask)
+        outs = self.decode(tgt, memory, tgt_mask)
         return self.generator(outs)
 
 
