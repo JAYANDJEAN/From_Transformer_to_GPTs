@@ -37,6 +37,7 @@ class PositionalEncoding(nn.Module):
         index = 0 if self.batch_first else 1
         pos_embedding = pos_embedding.unsqueeze(index)
         self.dropout = nn.Dropout(dropout)
+        # pos_embedding被通过register_buffer方法注册为一个缓冲，而不是模型的可学习参数。
         self.register_buffer('pos_embedding', pos_embedding)
 
     def forward(self, x: Tensor):
@@ -46,7 +47,6 @@ class PositionalEncoding(nn.Module):
             return self.dropout(x + self.pos_embedding[:x.size(0), :, :])
 
 
-# 以下只处理batch_size=True，如果不是，在前面就给换过来。
 class ScaleDotProductAttention(nn.Module):
     def __init__(self):
         super(ScaleDotProductAttention, self).__init__()
@@ -135,14 +135,11 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, src_mask):
         _x = x
-        x = self.attention(q=x, k=x, v=x, mask=src_mask)
-        x = self.dropout1(x)
+        x = self.dropout1(self.attention(q=x, k=x, v=x, mask=src_mask))
         x = self.norm1(x + _x)
 
         _x = x
-        x = self.ffn(x)
-
-        x = self.dropout2(x)
+        x = self.dropout2(self.ffn(x))
         x = self.norm2(x + _x)
         return x
 
@@ -163,28 +160,117 @@ class DecoderLayer(nn.Module):
         self.norm3 = nn.LayerNorm(d_model)
         self.dropout3 = nn.Dropout(dropout)
 
-    def forward(self, dec, enc, trg_mask, src_mask):
-        _x = dec
-        print(dec.shape)
-        x = self.self_attention(q=dec, k=dec, v=dec, mask=trg_mask)
-
-        x = self.dropout1(x)
+    def forward(self, tgt, memory, trg_mask):
+        _x = tgt
+        x = self.dropout1(self.self_attention(q=tgt, k=tgt, v=tgt, mask=trg_mask))
         x = self.norm1(x + _x)
 
-        if enc is not None:
-            _x = x
-            # memory_mask: (T, S).
-            x = self.cross_attention(q=x, k=enc, v=enc, mask=None)
-
-            x = self.dropout2(x)
-            x = self.norm2(x + _x)
+        _x = x
+        # memory_mask: (T, S). 我看一般实现是加src_mask，但我觉得不用，加了也是memory_mask
+        x = self.dropout2(self.cross_attention(q=x, k=memory, v=memory, mask=None))
+        x = self.norm2(x + _x)
 
         _x = x
-        x = self.ffn(x)
-
-        x = self.dropout3(x)
+        x = self.dropout3(self.ffn(x))
         x = self.norm3(x + _x)
         return x
+
+
+class TransformerScratch(nn.Module):
+
+    def __init__(self, num_encoder_layers: int,
+                 num_decoder_layers: int,
+                 emb_size: int,
+                 n_head: int,
+                 src_vocab_size: int,
+                 tgt_vocab_size: int,
+                 dim_feedforward: int = 512,
+                 dropout: float = 0.1,
+                 batch_first=True):
+        super().__init__()
+        assert batch_first, "must batch first"
+        self.src_tok_emb = TokenEmbedding(src_vocab_size, emb_size)
+        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
+        self.positional_encoding = PositionalEncoding(100, emb_size, dropout=dropout, batch_first=batch_first)
+
+        self.encoder_layers = nn.ModuleList([EncoderLayer(d_model=emb_size,
+                                                          dim_feedforward=dim_feedforward,
+                                                          n_head=n_head,
+                                                          dropout=dropout)
+                                             for _ in range(num_encoder_layers)])
+
+        self.decoder_layers = nn.ModuleList([DecoderLayer(d_model=emb_size,
+                                                          dim_feedforward=dim_feedforward,
+                                                          n_head=n_head,
+                                                          dropout=dropout)
+                                             for _ in range(num_decoder_layers)])
+
+        self.linear = nn.Linear(emb_size, tgt_vocab_size)
+
+    def forward(self, src, tgt, src_mask, tgt_mask):
+        src_emb = self.positional_encoding(self.src_tok_emb(src))
+        tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
+
+        for layer in self.encoder_layers:
+            src_emb = layer(src_emb, src_mask)
+
+        for layer in self.decoder_layers:
+            tgt_emb = layer(tgt_emb, src_emb, tgt_mask)
+
+        output = self.linear(tgt_emb)
+        return output
+
+
+class TransformerTorch(nn.Module):
+    def __init__(self,
+                 num_encoder_layers: int,
+                 num_decoder_layers: int,
+                 emb_size: int,
+                 n_head: int,
+                 src_vocab_size: int,
+                 tgt_vocab_size: int,
+                 dim_feedforward: int = 512,
+                 dropout: float = 0.1,
+                 batch_first=True):
+        super().__init__()
+        self.transformer = nn.Transformer(d_model=emb_size,
+                                          nhead=n_head,
+                                          num_encoder_layers=num_encoder_layers,
+                                          num_decoder_layers=num_decoder_layers,
+                                          dim_feedforward=dim_feedforward,
+                                          dropout=dropout,
+                                          batch_first=batch_first)
+        self.generator = nn.Linear(emb_size, tgt_vocab_size)
+        self.src_tok_emb = TokenEmbedding(src_vocab_size, emb_size)
+        self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
+        self.positional_encoding = PositionalEncoding(100, emb_size, dropout=dropout, batch_first=batch_first)
+        self.initialize()
+
+    def initialize(self):
+        for para in self.parameters():
+            if para.dim() > 1:
+                nn.init.xavier_uniform_(para)
+
+    def forward(self,
+                src: Tensor,
+                trg: Tensor,
+                src_mask: Tensor,
+                tgt_mask: Tensor,
+                src_padding_mask: Tensor,
+                tgt_padding_mask: Tensor,
+                memory_key_padding_mask: Tensor):
+        src_emb = self.positional_encoding(self.src_tok_emb(src))
+        tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
+        outs = self.transformer(src_emb, tgt_emb, src_mask, tgt_mask, None,
+                                src_padding_mask, tgt_padding_mask,
+                                memory_key_padding_mask)
+        return self.generator(outs)
+
+    def encode(self, src: Tensor, src_mask: Tensor):
+        return self.transformer.encoder(self.positional_encoding(self.src_tok_emb(src)), src_mask)
+
+    def decode(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
+        return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgt_mask)
 
 
 MAX_LEN = 100
@@ -198,7 +284,7 @@ TGT_SEQ_LEN = 17
 
 
 def positional_encoding():
-    def positional_encoding(max_len, d_model):
+    def positional_encoding_loop(max_len, d_model):
         pos_enc = np.zeros((max_len, d_model))
         for k in range(max_len):
             for i in range(0, d_model, 2):
@@ -208,7 +294,8 @@ def positional_encoding():
 
     pe1 = PositionalEncoding(MAX_LEN, D_MODEL, 0.1, batch_first=False)
     pe2 = PositionalEncoding(MAX_LEN, D_MODEL, 0.1, batch_first=True)
-    pos_enc_list = [positional_encoding(MAX_LEN, D_MODEL),
+    print(pe1.pos_embedding.requires_grad)
+    pos_enc_list = [positional_encoding_loop(MAX_LEN, D_MODEL),
                     pe1.pos_embedding.squeeze().numpy(),
                     pe2.pos_embedding.squeeze().numpy()]
     title_list = ['Explicit Loop Positional Encoding',
@@ -276,16 +363,31 @@ def encoder_layer():
 def decoder_layer():
     model = DecoderLayer(D_MODEL, DIM_FF, N_HEAD, DROPOUT)
     src_emb = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
-    src_mask = torch.ones(SEQ_LEN, SEQ_LEN)
     tgt_emb = torch.randn(BATCH_SIZE, TGT_SEQ_LEN, D_MODEL)
     tgt_mask = torch.ones(TGT_SEQ_LEN, TGT_SEQ_LEN)
 
-    out = model(tgt_emb, src_emb, tgt_mask, src_mask)
+    out = model(tgt_emb, src_emb, tgt_mask)
     print(out.shape)
+
+
+def transformer():
+    model_scratch = TransformerScratch(3, 3, D_MODEL, 8, 1000, 1000)
+    model_torch = TransformerTorch(3, 3, D_MODEL, 8, 1000, 1000)
+    src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.int)
+    tgt = torch.randint(low=0, high=100, size=(BATCH_SIZE, TGT_SEQ_LEN), dtype=torch.int)
+    src_mask = torch.randn(SEQ_LEN, SEQ_LEN)
+    tgt_mask = torch.randn(TGT_SEQ_LEN, TGT_SEQ_LEN)
+    src_padding_mask = torch.randn(BATCH_SIZE, SEQ_LEN)
+    tgt_padding_mask = torch.randn(BATCH_SIZE, TGT_SEQ_LEN)
+
+    print(model_scratch(src, tgt, src_mask, tgt_mask).shape)
+    print(model_torch(src, tgt, src_mask, tgt_mask,
+                      src_padding_mask, tgt_padding_mask,
+                      src_padding_mask).shape)
 
 
 if __name__ == '__main__':
     # test_positional_encoding()
     # test_scale_dot_product_attention()
     # multi_head_attention()
-    decoder_layer()
+    positional_encoding()

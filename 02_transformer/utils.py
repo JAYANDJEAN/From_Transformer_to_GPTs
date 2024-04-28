@@ -20,12 +20,12 @@ def generate_square_subsequent_mask(sz: int):
 
 # 需要加入batch_first参数
 def create_mask(src: Tensor, tgt: Tensor):
-    src_seq_len = src.shape[0]
-    tgt_seq_len = tgt.shape[0]
+    src_seq_len = src.shape[1]
+    tgt_seq_len = tgt.shape[1]
     tgt_mask = generate_square_subsequent_mask(tgt_seq_len)
     src_mask = torch.zeros((src_seq_len, src_seq_len)).type(torch.bool)
-    src_padding_mask = (src == SPECIAL_IDS['<pad>']).transpose(0, 1)
-    tgt_padding_mask = (tgt == SPECIAL_IDS['<pad>']).transpose(0, 1)
+    src_padding_mask = (src == SPECIAL_IDS['<pad>'])
+    tgt_padding_mask = (tgt == SPECIAL_IDS['<pad>'])
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
 
@@ -97,8 +97,8 @@ def get_data(batch_size: int):
         for src_sample, tgt_sample in batch:
             src_batch.append(func_t2i[src_l](src_sample.rstrip("\n")))
             tgt_batch.append(func_t2i[tgt_l](tgt_sample.rstrip("\n")))
-        src_batch = pad_sequence(src_batch, padding_value=SPECIAL_IDS['<pad>'])
-        tgt_batch = pad_sequence(tgt_batch, padding_value=SPECIAL_IDS['<pad>'])
+        src_batch = pad_sequence(src_batch, padding_value=SPECIAL_IDS['<pad>']).transpose(0, 1)
+        tgt_batch = pad_sequence(tgt_batch, padding_value=SPECIAL_IDS['<pad>']).transpose(0, 1)
         return src_batch, tgt_batch
 
     for lang in [src_l, tgt_l]:

@@ -1,6 +1,6 @@
 import torch
 from timeit import default_timer as timer
-from transformer_torch import Seq2SeqTransformer
+from models import TransformerTorch
 from utils import create_mask, get_data, translate, SPECIAL_IDS
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -80,9 +80,9 @@ def show_parameters():
     _, (src, tgt) = next(enumerate(train_loader))
     print('src size: ', src.shape)  # torch.Size([27, 128]) 最长句子是包含27个token
     print('tgt size: ', tgt.shape)  # torch.Size([24, 128])
-    print(src[:, 0])
+    print(src[0, :])
     # tensor([2, 21, 85, 257, 31, 87, 22, 94, 7, 16, 112, 7910, 3209, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-    print(tgt[:, 0])
+    print(tgt[0, :])
     # tensor([2, 19, 25, 15, 1169, 808, 17, 57, 84, 336, 1339, 5, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
     # 测试文本转序号的功能
@@ -99,7 +99,7 @@ def show_parameters():
     这样一来，模型在预测第一个符号时可以根据[<start>]来生成a，在预测第二个符号时可以根据[<start>, a]来生成b，以此类推。
     这种处理方式在训练时可以更好地利用模型的输出来指导模型的训练，提高模型的性能。
     '''
-    tgt_input, tgt_out = tgt[:-1, :].to(DEVICE), tgt[1:, :].to(DEVICE)
+    tgt_input, tgt_out = tgt[:, :-1].to(DEVICE), tgt[:, 1:].to(DEVICE)
 
     print('-------------------------mask-------------------------------')
     '''
