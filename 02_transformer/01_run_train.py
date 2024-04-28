@@ -1,88 +1,24 @@
 import torch
 from timeit import default_timer as timer
-from models import TransformerTorch
-from utils import generate_mask, get_data, translate, SPECIAL_IDS
+from models import TransformerTorch, TransformerScratch
+from utils import generate_mask, prepare_dataset, translate, SPECIAL_IDS, src_lang, tgt_lang
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-def train_ops():
-    def _epoch(model, dataloader, tp):
-        losses = 0
-        if tp == 'train':
-            model.train()
-        elif tp == 'eval':
-            model.eval()
-
-        for src, tgt in dataloader:
-            src = src.to(DEVICE)
-            tgt_input = tgt[:, :-1].to(DEVICE)
-            tgt_out = tgt[:, 1:].to(DEVICE)
-            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
-            tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
-            src_padding_mask = (src == SPECIAL_IDS['<pad>']).to(DEVICE)
-            tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>']).to(DEVICE)
-
-            tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                src_padding_mask, tgt_padding_mask, src_padding_mask)
-            if tp == 'train':
-                optimizer.zero_grad()
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                loss.backward()
-                optimizer.step()
-                losses += loss.item()
-            elif tp == 'eval':
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                losses += loss.item()
-        return losses / len(list(dataloader))
-
-    BATCH_SIZE = 128
-    NUM_EPOCHS = 18
-    src_l = 'de'
-    tgt_l = 'en'
-
-    text_to_indices, vocabs, train_loader, eval_loader = get_data(BATCH_SIZE)
-
-    transformer = TransformerTorch(num_encoder_layers=3,
-                                   num_decoder_layers=3,
-                                   emb_size=512,
-                                   n_head=8,
-                                   src_vocab_size=len(vocabs[src_l]),
-                                   tgt_vocab_size=len(vocabs[tgt_l])
-                                   ).to(DEVICE)
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
-    min_train_loss = float('inf')
-
-    for epoch in range(1, NUM_EPOCHS + 1):
-        start_time = timer()
-        train_loss = _epoch(transformer, train_loader, 'train')
-        if train_loss < min_train_loss:
-            min_train_loss = train_loss
-            torch.save(transformer.state_dict(), 'best_model.pth')
-            print("Model saved at epoch:", epoch)
-        end_time = timer()
-        val_loss = _epoch(transformer, eval_loader, 'eval')
-        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-               f"Val loss: {val_loss:.3f}, "
-               f"Epoch time = {(end_time - start_time):.3f}s"))
-
-    # src_sentence = "Eine Gruppe von Menschen steht vor einem Iglu ."
-    # print(translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
 def show_parameters():
     BATCH_SIZE = 128
     EMB_SIZE = 512
-    src_l = 'de'
-    tgt_l = 'en'
     print('--------------------------data------------------------------------')
     '''
     text_to_indices: 将文本转成编号序列
     vocabs: 字典
+    pip install -U spacy
+    python -m spacy download en_core_web_sm
+    python -m spacy download de_core_news_sm
     '''
-    text_to_indices, vocabs, train_loader, eval_loader = get_data(BATCH_SIZE)
-    src_size, tgt_size = len(vocabs[src_l]), len(vocabs[tgt_l])
+    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
+    src_size, tgt_size = len(vocabs[src_lang]), len(vocabs[tgt_lang])
     _, (src, tgt) = next(enumerate(train_loader))
     print('src size: ', src.shape)
     print('tgt size: ', tgt.shape)
@@ -160,6 +96,86 @@ def show_parameters():
     print(memory.shape)
 
 
-# train_ops()
+def train_and_translate(model_name):
+    def _epoch(model, dataloader, tp):
+        losses = 0
+        if tp == 'train':
+            model.train()
+        elif tp == 'eval':
+            model.eval()
 
-show_parameters()
+        for src, tgt in dataloader:
+            src = src.to(DEVICE)
+            tgt_input = tgt[:, :-1].to(DEVICE)
+            tgt_out = tgt[:, 1:].to(DEVICE)
+            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
+            tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
+            src_padding_mask = (src == SPECIAL_IDS['<pad>']).to(DEVICE)
+            tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>']).to(DEVICE)
+
+            if model_name == 'torch':
+                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
+                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
+            elif model_name == 'scratch':
+                tgt_predict = model(src, tgt_input, src_mask, tgt_mask)
+            else:
+                tgt_predict = None
+
+            if tp == 'train':
+                optimizer.zero_grad()
+                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                loss.backward()
+                optimizer.step()
+                losses += loss.item()
+            elif tp == 'eval':
+                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                losses += loss.item()
+        return losses / len(list(dataloader))
+
+    BATCH_SIZE = 128
+    NUM_EPOCHS = 18
+
+    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
+
+    if model_name == 'torch':
+        transformer = TransformerTorch(num_encoder_layers=3,
+                                       num_decoder_layers=3,
+                                       emb_size=512,
+                                       n_head=8,
+                                       src_vocab_size=len(vocabs[src_lang]),
+                                       tgt_vocab_size=len(vocabs[tgt_lang])
+                                       ).to(DEVICE)
+    elif model_name == 'scratch':
+        transformer = TransformerScratch(num_encoder_layers=3,
+                                         num_decoder_layers=3,
+                                         emb_size=512,
+                                         n_head=8,
+                                         src_vocab_size=len(vocabs[src_lang]),
+                                         tgt_vocab_size=len(vocabs[tgt_lang])
+                                         ).to(DEVICE)
+    else:
+        transformer = None
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
+    min_train_loss = float('inf')
+    model_path = 'best_model_' + model_name + '.pth'
+
+    for epoch in range(1, NUM_EPOCHS + 1):
+        start_time = timer()
+        train_loss = _epoch(transformer, train_loader, 'train')
+        if train_loss < min_train_loss:
+            min_train_loss = train_loss
+            torch.save(transformer.state_dict(), model_path)
+            print("Model saved at epoch:", epoch)
+        end_time = timer()
+        val_loss = _epoch(transformer, eval_loader, 'eval')
+        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
+               f"Val loss: {val_loss:.3f}, "
+               f"Epoch time = {(end_time - start_time):.3f}s"))
+
+    src_sentence = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
+    transformer.load_state_dict(torch.load(model_path))
+    print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
+
+
+train_and_translate('torch')
