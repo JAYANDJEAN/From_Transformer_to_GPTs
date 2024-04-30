@@ -280,7 +280,7 @@ class TransformerTorch(nn.Module):
         return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgt_mask)
 
 
-def positional_encoding():
+def check_positional_encoding():
     def positional_encoding_loop(max_len, d_model):
         pos_enc = np.zeros((max_len, d_model))
         for k in range(max_len):
@@ -320,7 +320,7 @@ def positional_encoding():
     plt.savefig('positional_encoding.png')
 
 
-def scale_dot_product_attention():
+def check_scale_dot_product_attention():
     attention = ScaleDotProductAttention()
     SEQ_LEN = 5
 
@@ -350,7 +350,7 @@ def scale_dot_product_attention():
     print(attended_values_masked[0, 0, :, :5])
 
 
-def multi_head_attention():
+def check_multi_head_attention():
     model = MultiHeadAttention(D_MODEL, N_HEAD)
     # Generate random input tensors
     q = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
@@ -360,7 +360,7 @@ def multi_head_attention():
     assert out.shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
 
 
-def encoder_layer():
+def check_encoder_layer():
     model = EncoderLayer(D_MODEL, DIM_FF, N_HEAD, DROPOUT)
     src_emb = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
     src_mask = torch.ones(SEQ_LEN, SEQ_LEN)
@@ -368,7 +368,7 @@ def encoder_layer():
     assert out.shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
 
 
-def decoder_layer():
+def check_decoder_layer():
     model = DecoderLayer(D_MODEL, DIM_FF, N_HEAD, DROPOUT)
     src_emb = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
     tgt_emb = torch.randn(BATCH_SIZE, TGT_SEQ_LEN, D_MODEL)
@@ -378,7 +378,7 @@ def decoder_layer():
     print(out.shape)
 
 
-def transformer():
+def check_transformer():
     def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -415,4 +415,4 @@ if __name__ == '__main__':
     DROPOUT = 0.1
     TGT_SEQ_LEN = 17
 
-    transformer()
+    check_transformer()

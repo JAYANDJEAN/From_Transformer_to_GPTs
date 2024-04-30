@@ -5,6 +5,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 from typing import Iterable, List, Dict
+import evaluate
 
 SPECIAL_IDS = {'<unk>': 0, '<pad>': 1, '<bos>': 2, '<eos>': 3}
 src_lang = 'de'
@@ -19,7 +20,8 @@ def prepare_dataset(batch_size: int):
     url = "https://raw.githubusercontent.com/neychev/small_DL_repo/master/datasets/Multi30k/"
     multi30k.URL["train"] = url + "training.tar.gz"
     multi30k.URL["valid"] = url + "validation.tar.gz"
-    # 定义 tokenizer
+
+    # 1.定义 tokenizer
     func_token[src_lang] = get_tokenizer('spacy', language='de_core_news_sm')
     func_token[tgt_lang] = get_tokenizer('spacy', language='en_core_web_sm')
 
@@ -32,19 +34,19 @@ def prepare_dataset(batch_size: int):
 
         return func
 
-    # 挨个抛出token，方便做成字典。
+    # 2.挨个抛出token，方便做成字典。
     def yield_tokens(data: Iterable, language: str) -> List[str]:
         i = 0 if language == src_lang else 1
         for da in data:
             yield func_token[language](da[i])
 
-    # 首尾拼接特殊字符
+    # 3.首尾拼接特殊字符
     def tensor_transform(token_ids: List[int]):
         return torch.cat((torch.tensor([SPECIAL_IDS['<bos>']]),
                           torch.tensor(token_ids),
                           torch.tensor([SPECIAL_IDS['<eos>']])))
 
-    # 填充<pad>
+    # 4.填充<pad>
     def collate_fn(batch):
         src_batch, tgt_batch = [], []
         for src_sample, tgt_sample in batch:
@@ -114,10 +116,11 @@ def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, 
 
 
 def bleu():
+    # todo
     pass
 
 
-if __name__ == '__main__':
+def check_translate():
     from models import TransformerTorch
 
     src_ = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
@@ -131,3 +134,7 @@ if __name__ == '__main__':
                                    ).to('cpu')
 
     print("Translated sentence:", translate(transformer, src_, t2i, voc, 'cpu'))
+
+
+if __name__ == '__main__':
+    check_translate()
