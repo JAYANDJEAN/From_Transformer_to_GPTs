@@ -408,7 +408,7 @@ def check_transformer():
 if __name__ == '__main__':
     MAX_LEN = 100
     D_MODEL = 512
-    BATCH_SIZE = 128
+    BATCH_SIZE = 64
     SEQ_LEN = 23
     N_HEAD = 8
     DIM_FF = 256

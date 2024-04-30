@@ -1,0 +1,13 @@
+torch
+fairscale
+fire
+sentencepiece
+
+transformers
+torchtext
+tokenizers
+datasets
+matplotlib
+
+modelsummary
+evaluate
