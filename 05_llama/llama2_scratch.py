@@ -16,11 +16,9 @@ class ModelArgs:
     multiple_of: int = 256
     ffn_dim_multiplier: Optional[float] = None
     norm_eps: float = 1e-5
-
     # Needed for KV cache
     max_batch_size: int = 32
     max_seq_len: int = 2048
-
     device: str = None
 
 
@@ -64,14 +62,17 @@ def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, t
 
 
 def apply_rotary_embeddings(x: torch.Tensor, freqs_complex: torch.Tensor, device: str):
-    # Separate the last dimension pairs of two values, representing the real and imaginary parts of the complex number
+    # Separate the last dimension pairs of two values, representing the real and
+    # imaginary parts of the complex number
     # Two consecutive values will become a single complex number
     # (B, Seq_Len, H, Head_Dim) -> (B, Seq_Len, H, Head_Dim/2)
     x_complex = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
-    # Reshape the freqs_complex tensor to match the shape of the x_complex tensor. So we need to add the batch dimension and the head dimension
+    # Reshape the freqs_complex tensor to match the shape of the x_complex tensor.
+    # So we need to add the batch dimension and the head dimension
     # (Seq_Len, Head_Dim/2) --> (1, Seq_Len, 1, Head_Dim/2)
     freqs_complex = freqs_complex.unsqueeze(0).unsqueeze(2)
-    # Multiply each complex number in the x_complex tensor by the corresponding complex number in the freqs_complex tensor
+    # Multiply each complex number in the x_complex tensor by the corresponding complex number
+    # in the freqs_complex tensor
     # Which results in the rotation of the complex number as shown in the Figure 1 of the paper
     # (B, Seq_Len, H, Head_Dim/2) * (1, Seq_Len, 1, Head_Dim/2) = (B, Seq_Len, H, Head_Dim/2)
     x_rotated = x_complex * freqs_complex
@@ -87,14 +88,13 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
     batch_size, seq_len, n_kv_heads, head_dim = x.shape
     if n_rep == 1:
         return x
-    return (
-        # (B, Seq_Len, N_KV_Heads, 1, Head_Dim)
-        x[:, :, :, None, :]
-        # (B, Seq_Len, N_KV_Heads, N_Rep, Head_Dim)
-        .expand(batch_size, seq_len, n_kv_heads, n_rep, head_dim)
-        # (B, Seq_Len, N_KV_Heads * N_Rep, Head_Dim)
-        .reshape(batch_size, seq_len, n_kv_heads * n_rep, head_dim)
-    )
+    # (B, Seq_Len, N_KV_Heads, 1, Head_Dim) ->
+    # (B, Seq_Len, N_KV_Heads, N_Rep, Head_Dim) ->
+    # (B, Seq_Len, N_KV_Heads * N_Rep, Head_Dim)
+    return (x[:, :, :, None, :].
+            expand(batch_size, seq_len, n_kv_heads, n_rep, head_dim).
+            reshape(batch_size, seq_len, n_kv_heads * n_rep, head_dim)
+            )
 
 
 class SelfAttention(nn.Module):
@@ -107,8 +107,10 @@ class SelfAttention(nn.Module):
         self.n_heads_q = args.n_heads
         # Indicates how many times the Keys and Values should be repeated
         self.n_rep = self.n_heads_q // self.n_kv_heads
-        # Indicates the dimension of each head, that is, the part of the embedding that each head will be responsible for
+        # Indicates the dimension of each head, that is, the part of the embedding
+        # that each head will be responsible for
         self.head_dim = args.dim // args.n_heads
+        self.device = args.device
 
         self.wq = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
         self.wk = nn.Linear(args.dim, self.n_kv_heads * self.head_dim, bias=False)
@@ -118,12 +120,7 @@ class SelfAttention(nn.Module):
         self.cache_k = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
         self.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
 
-    def forward(
-            self,
-            x: torch.Tensor,
-            start_pos: int,
-            freqs_complex: torch.Tensor
-    ):
+    def forward(self, x: torch.Tensor, start_pos: int, freqs_complex: torch.Tensor):
         batch_size, seq_len, _ = x.shape  # (B, 1, Dim)
 
         # (B, 1, Dim) -> (B, 1, H_Q * Head_Dim)
@@ -141,9 +138,9 @@ class SelfAttention(nn.Module):
         xv = xv.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
 
         # (B, 1, H_Q, Head_Dim) --> (B, 1, H_Q, Head_Dim)
-        xq = apply_rotary_embeddings(xq, freqs_complex, device=x.device)
+        xq = apply_rotary_embeddings(xq, freqs_complex, self.device)
         # (B, 1, H_KV, Head_Dim) --> (B, 1, H_KV, Head_Dim)
-        xk = apply_rotary_embeddings(xk, freqs_complex, device=x.device)
+        xk = apply_rotary_embeddings(xk, freqs_complex, self.device)
 
         # Replace the entry in the cache
         self.cache_k[:batch_size, start_pos: start_pos + seq_len] = xk
@@ -154,7 +151,8 @@ class SelfAttention(nn.Module):
         # (B, Seq_Len_KV, H_KV, Head_Dim)
         values = self.cache_v[:batch_size, : start_pos + seq_len]
 
-        # Since every group of Q shares the same K and V heads, just repeat the K and V heads for every Q in the same group.
+        # Since every group of Q shares the same K and V heads,
+        # just repeat the K and V heads for every Q in the same group.
 
         # (B, Seq_Len_KV, H_KV, Head_Dim) --> (B, Seq_Len_KV, H_Q, Head_Dim)
         keys = repeat_kv(keys, self.n_rep)
@@ -181,10 +179,7 @@ class SelfAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(
-            self,
-            args: ModelArgs
-    ):
+    def __init__(self, args: ModelArgs):
         super().__init__()
 
         hidden_dim = 4 * args.dim
@@ -229,9 +224,7 @@ class EncoderBlock(nn.Module):
 
     def forward(self, x: torch.Tensor, start_pos: int, freqs_complex: torch.Tensor):
         # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
-        h = x + self.attention.forward(
-            self.attention_norm(x), start_pos, freqs_complex
-        )
+        h = x + self.attention.forward(self.attention_norm(x), start_pos, freqs_complex)
         # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
         out = h + self.feed_forward.forward(self.ffn_norm(h))
         return out

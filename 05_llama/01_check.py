@@ -10,15 +10,15 @@ from llama2_scratch import ModelArgs, Transformer
 
 
 class LLaMA:
-
     def __init__(self, model: Transformer, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
         self.model = model
         self.tokenizer = tokenizer
         self.args = model_args
 
     @staticmethod
-    def build(checkpoints_dir: str, tokenizer_path: str, load_model: bool, max_seq_len: int, max_batch_size: int,
-              device: str):
+    def build(checkpoints_dir: str, tokenizer_path: str, load_model: bool,
+              max_seq_len: int, max_batch_size: int, device: str):
+        global checkpoint
         prev_time = time.time()
         if load_model:
             checkpoints = sorted(Path(checkpoints_dir).glob("*.pth"))
@@ -62,23 +62,26 @@ class LLaMA:
         if max_gen_len is None:
             max_gen_len = self.args.max_seq_len - 1
         # Convert each prompt into tokens
-        prompt_tokens = [self.tokenizer.encode(prompt, out_type=int, add_bos=True, add_eos=False) for prompt in prompts]
+        prompt_tokens = [self.tokenizer.encode(prompt, out_type=int, add_bos=True, add_eos=False)
+                         for prompt in prompts]
         # Make sure the batch size is not too large
         batch_size = len(prompt_tokens)
-        assert batch_size <= self.args.max_batch_size, f"batch size must be less than or equal to {self.args.max_batch_size}"
+        assert batch_size <= self.args.max_batch_size, \
+            f"batch size must be less than or equal to {self.args.max_batch_size}"
         max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
         # Make sure the prompt length is not larger than the maximum sequence length
-        assert max_prompt_len <= self.args.max_seq_len, f"prompt length must be less than or equal to {self.args.max_seq_len}"
+        assert max_prompt_len <= self.args.max_seq_len, \
+            f"prompt length must be less than or equal to {self.args.max_seq_len}"
         total_len = min(self.args.max_seq_len, max_gen_len + max_prompt_len)
 
         # Create the list that will contain the generated tokens, along with the initial prompt tokens
         pad_id = self.tokenizer.pad_id()
-        tokens = torch.full((batch_size, total_len), pad_id, dtype=torch.long, device=device)
+        tokens = torch.full((batch_size, total_len), pad_id, dtype=torch.long, device=self.args.device)
         for k, t in enumerate(prompt_tokens):
             # Populate the initial tokens with the prompt tokens
-            tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=device)
+            tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=self.args.device)
 
-        eos_reached = torch.tensor([False] * batch_size, device=device)
+        eos_reached = torch.tensor([False] * batch_size, device=self.args.device)
         prompt_tokens_mask = tokens != pad_id  # True if the token is a prompt token, False otherwise
         cur_iterator = tqdm(range(1, total_len), desc="Generating tokens")
         for cur_pos in cur_iterator:
@@ -110,7 +113,7 @@ class LLaMA:
                 current_prompt_tokens = current_prompt_tokens[:eos_idx]
             out_tokens.append(current_prompt_tokens)
             out_text.append(self.tokenizer.decode(current_prompt_tokens))
-        return (out_tokens, out_text)
+        return out_tokens, out_text
 
     def _sample_top_p(self, probs, p):
         # (B, vocab_size)
@@ -131,23 +134,24 @@ class LLaMA:
         return next_token
 
 
-if __name__ == '__main__':
+def check_llama():
     torch.manual_seed(0)
 
-    allow_cuda = False
-    # device = 'cuda' if torch.cuda.is_available() and allow_cuda else 'cpu'
-    device = "mps"
+    device = "cpu"
 
     prompts = [
         "Simply put, the theory of relativity states that ",
+
         "If Google was an Italian company founded in Milan, it would",
+
         # Few shot promt
         """Translate English to French:
-
+        
         sea otter => loutre de mer
         peppermint => menthe poivrée
         plush girafe => girafe peluche
         cheese =>""",
+
         # Zero shot prompt
         """Tell me if the following person is actually Doraemon disguised as human:
         Name: Umar Jamil
@@ -169,3 +173,7 @@ if __name__ == '__main__':
     for i in range(len(out_texts)):
         print(f'{out_texts[i]}')
         print('-' * 50)
+
+
+if __name__ == '__main__':
+    check_llama()
