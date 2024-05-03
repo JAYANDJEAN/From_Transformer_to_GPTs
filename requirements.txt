@@ -2,7 +2,7 @@ torch
 fairscale
 fire
 sentencepiece
-
+pyyaml
 transformers
 torchtext
 tokenizers

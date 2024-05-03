@@ -2,8 +2,18 @@ import torch
 from timeit import default_timer as timer
 from models import TransformerTorch, TransformerScratch
 from utils import generate_mask, prepare_dataset, translate, SPECIAL_IDS, src_lang, tgt_lang
+from tqdm import tqdm
+import warnings
+import yaml
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+warnings.filterwarnings("ignore")
+if torch.cuda.is_available():
+    device = 'cuda'
+elif torch.backends.mps.is_available():
+    device = 'mps'
+else:
+    device = 'cpu'
+DEVICE = torch.device(device)
 
 
 def show_parameters():
@@ -96,13 +106,20 @@ def show_parameters():
     print(memory.shape)
 
 
-def train_and_translate(model_name, num_epochs):
+def train_and_translate(parameters):
     def _epoch(model, dataloader, tp):
-        losses = 0
+
         if tp == 'train':
             model.train()
         elif tp == 'eval':
             model.eval()
+
+        losses = 0
+        optimizer = torch.optim.Adam(transformer.parameters(),
+                                     lr=parameters['lr'],
+                                     betas=eval(parameters['betas']),
+                                     eps=eval(parameters['eps']))
+        loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
 
         for src, tgt in dataloader:
             src = src.to(DEVICE)
@@ -113,10 +130,10 @@ def train_and_translate(model_name, num_epochs):
             src_padding_mask = (src == SPECIAL_IDS['<pad>']).to(DEVICE)
             tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>']).to(DEVICE)
 
-            if model_name == 'torch':
+            if parameters['model_name'] == 'torch':
                 tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
                                     src_padding_mask, tgt_padding_mask, src_padding_mask)
-            elif model_name == 'scratch':
+            elif parameters['model_name'] == 'scratch':
                 tgt_predict = model(src, tgt_input, src_mask, tgt_mask)
             else:
                 tgt_predict = None
@@ -130,50 +147,55 @@ def train_and_translate(model_name, num_epochs):
             elif tp == 'eval':
                 loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
                 losses += loss.item()
+            pbar.update(1)
+
         return losses / len(list(dataloader))
 
-    BATCH_SIZE = 128
-    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
-
-    if model_name == 'torch':
-        transformer = TransformerTorch(num_encoder_layers=3,
-                                       num_decoder_layers=3,
-                                       d_model=512,
-                                       n_head=8,
+    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(parameters['batch_size'])
+    if parameters['model_name'] == 'torch':
+        transformer = TransformerTorch(num_encoder_layers=parameters['num_encode'],
+                                       num_decoder_layers=parameters['num_decode'],
+                                       d_model=parameters['d_model'],
+                                       n_head=parameters['n_head'],
                                        src_vocab_size=len(vocabs[src_lang]),
                                        tgt_vocab_size=len(vocabs[tgt_lang])
                                        ).to(DEVICE)
-    elif model_name == 'scratch':
-        transformer = TransformerScratch(num_encoder_layers=3,
-                                         num_decoder_layers=3,
-                                         d_model=512,
-                                         n_head=8,
+    elif parameters['model_name'] == 'scratch':
+        transformer = TransformerScratch(num_encoder_layers=parameters['num_encode'],
+                                         num_decoder_layers=parameters['num_decode'],
+                                         d_model=parameters['d_model'],
+                                         n_head=parameters['n_head'],
                                          src_vocab_size=len(vocabs[src_lang]),
                                          tgt_vocab_size=len(vocabs[tgt_lang])
                                          ).to(DEVICE)
     else:
         transformer = None
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
-    min_train_loss = float('inf')
-    model_path = 'best_model_' + model_name + '.pth'
 
-    for epoch in range(1, num_epochs + 1):
+    min_train_loss = float('inf')
+    model_path = 'best_model_' + parameters['model_version'] + '.pth'
+
+    for epoch in range(1, parameters['num_epochs'] + 1):
         start_time = timer()
-        train_loss = _epoch(transformer, train_loader, 'train')
-        if train_loss < min_train_loss:
-            min_train_loss = train_loss
-            torch.save(transformer.state_dict(), model_path)
-            print("Model saved at epoch:", epoch)
-        end_time = timer()
-        val_loss = _epoch(transformer, eval_loader, 'eval')
-        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-               f"Val loss: {val_loss:.3f}, "
-               f"Epoch time = {(end_time - start_time):.3f}s"))
+        with tqdm(total=len(list(train_loader)) + len(list(eval_loader)),
+                  desc=f'Epoch {epoch}',
+                  unit='batch') as pbar:
+            train_loss = _epoch(transformer, train_loader, 'train')
+            val_loss = _epoch(transformer, eval_loader, 'eval')
+
+            if train_loss < min_train_loss:
+                min_train_loss = train_loss
+                torch.save(transformer.state_dict(), model_path)
+            end_time = timer()
+            print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
+                   f"Val loss: {val_loss:.3f}, "
+                   f"Epoch time = {(end_time - start_time):.3f}s"))
 
     src_sentence = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
     transformer.load_state_dict(torch.load(model_path))
     print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
-train_and_translate('scratch', 20)
+with open('scratch_v1.yml', 'r') as file:
+    config = yaml.safe_load(file)
+
+train_and_translate(config)

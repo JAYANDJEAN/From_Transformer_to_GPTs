@@ -42,10 +42,10 @@ class LLaMA:
         tokenizer.load(tokenizer_path)
         model_args.vocab_size = tokenizer.vocab_size()
 
-        if device == "cuda":
-            torch.set_default_tensor_type(torch.cuda.HalfTensor)
-        else:
-            torch.set_default_tensor_type(torch.BFloat16Tensor)
+        # if device == "cuda":
+        #     torch.set_default_tensor_type(torch.cuda.HalfTensor)
+        # else:
+        #     torch.set_default_tensor_type(torch.BFloat16Tensor)
 
         model = Transformer(model_args).to(device)
 
@@ -135,7 +135,8 @@ if __name__ == '__main__':
     torch.manual_seed(0)
 
     allow_cuda = False
-    device = 'cuda' if torch.cuda.is_available() and allow_cuda else 'cpu'
+    # device = 'cuda' if torch.cuda.is_available() and allow_cuda else 'cpu'
+    device = "mps"
 
     prompts = [
         "Simply put, the theory of relativity states that ",
