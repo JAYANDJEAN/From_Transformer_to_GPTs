@@ -6,7 +6,7 @@ import json
 from sentencepiece import SentencePieceProcessor
 from tqdm import tqdm
 
-from llama2_scratch import ModelArgs, Transformer
+from llama2_scratch import *
 
 
 class LLaMA:
@@ -175,5 +175,22 @@ def check_llama():
         print('-' * 50)
 
 
+def check_rope():
+    result = precompute_theta_pos_frequencies(512, 10, 'cpu')
+    x = torch.view_as_real(result)
+    print(x.shape)
+    print(x[2,:,:])
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import numpy as np
+
+    # 生成一个随机的 n×n 矩阵
+    n = 512
+    matrix = np.random.rand(n, n)
+
+    sns.heatmap(matrix, cmap='coolwarm')
+    # plt.show()
+
+
 if __name__ == '__main__':
-    check_llama()
+    check_rope()
