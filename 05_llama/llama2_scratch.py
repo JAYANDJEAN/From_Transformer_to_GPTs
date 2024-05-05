@@ -39,7 +39,7 @@ class RMSNorm(nn.Module):
         return self.weight * self._norm(x.float()).type_as(x)
 
 
-def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, theta: float = 10000.0):
+def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
     # As written in the paragraph 3.2.2 of the paper
     # >> In order to generalize our results in 2D to any xi ∈ Rd where **d is even**, [...]
     assert head_dim % 2 == 0, "Dimension must be divisible by 2"
@@ -48,7 +48,7 @@ def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, t
     # Shape: (Head_Dim / 2)
     theta_numerator = torch.arange(0, head_dim, 2).float()
     # Shape: (Head_Dim / 2)
-    theta = 1.0 / (theta ** (theta_numerator / head_dim)).to(device)  # (Dim / 2)
+    theta = 1.0 / (base ** (theta_numerator / head_dim)).to(device)  # (Dim / 2)
     # Construct the positions (the "m" parameter)
     # Shape: (Seq_Len)
     m = torch.arange(seq_len, device=device)

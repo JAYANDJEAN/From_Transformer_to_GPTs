@@ -48,7 +48,7 @@ def check_positional_encoding():
         plt.colorbar()
 
     plt.tight_layout()
-    plt.savefig('positional_encoding.png')
+    plt.savefig('PE.png')
 
 
 def check_scale_dot_product_attention():
@@ -235,4 +235,4 @@ if __name__ == '__main__':
     DROPOUT = 0.1
     TGT_SEQ_LEN = 17
 
-    check_data()
+    check_positional_encoding()
