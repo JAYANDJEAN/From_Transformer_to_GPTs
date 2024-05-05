@@ -1,9 +1,17 @@
+import math
+import time
+import json
 from dataclasses import dataclass
 from typing import Optional
-import math
+from pathlib import Path
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
+
+from sentencepiece import SentencePieceProcessor
 
 
 @dataclass
@@ -22,69 +30,39 @@ class ModelArgs:
     device: str = None
 
 
-class RMSNorm(nn.Module):
-    def __init__(self, dim: int, eps: float = 1e-6):
-        super().__init__()
-        self.eps = eps
-        # The gamma parameter
-        self.weight = nn.Parameter(torch.ones(dim))
-
-    def _norm(self, x: torch.Tensor):
-        # (B, Seq_Len, Dim) * (B, Seq_Len, 1) = (B, Seq_Len, Dim)
-        # rsqrt: 1 / sqrt(x)
-        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
-
-    def forward(self, x: torch.Tensor):
-        # (Dim) * (B, Seq_Len, Dim) = (B, Seq_Len, Dim)
-        return self.weight * self._norm(x.float()).type_as(x)
-
-
+# done
 def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
-    # As written in the paragraph 3.2.2 of the paper
-    # >> In order to generalize our results in 2D to any xi ∈ Rd where **d is even**, [...]
     assert head_dim % 2 == 0, "Dimension must be divisible by 2"
-    # Build the theta parameter
-    # According to the formula theta_i = 10000^(-2(i-1)/dim) for i = [1, 2, ... dim/2]
     # Shape: (Head_Dim / 2)
     theta_numerator = torch.arange(0, head_dim, 2).float()
     # Shape: (Head_Dim / 2)
     theta = 1.0 / (base ** (theta_numerator / head_dim)).to(device)  # (Dim / 2)
-    # Construct the positions (the "m" parameter)
     # Shape: (Seq_Len)
     m = torch.arange(seq_len, device=device)
-    # Multiply each theta by each position using the outer product.
     # Shape: (Seq_Len) outer_product* (Head_Dim / 2) -> (Seq_Len, Head_Dim / 2)
     freqs = torch.outer(m, theta).float()
-    # We can compute complex numbers in the polar form c = R * exp(m * theta), where R = 1 as follows:
-    # (Seq_Len, Head_Dim / 2) -> (Seq_Len, Head_Dim / 2)
+    # Shape: (Seq_Len, Head_Dim / 2) -> (Seq_Len, Head_Dim / 2)
     freqs_complex = torch.polar(torch.ones_like(freqs), freqs)
     return freqs_complex
 
 
-def apply_rotary_embeddings(x: torch.Tensor, freqs_complex: torch.Tensor, device: str):
-    # Separate the last dimension pairs of two values, representing the real and
-    # imaginary parts of the complex number
-    # Two consecutive values will become a single complex number
-    # (B, Seq_Len, H, Head_Dim) -> (B, Seq_Len, H, Head_Dim/2)
+# done
+def apply_rotary_embeddings(x: Tensor, freqs_complex: Tensor, device: str):
+    # Shape: (B, Seq_Len, H, Head_Dim) -> (B, Seq_Len, H, Head_Dim/2)
+    # H * Head_Dim = dim
     x_complex = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
-    # Reshape the freqs_complex tensor to match the shape of the x_complex tensor.
-    # So we need to add the batch dimension and the head dimension
-    # (Seq_Len, Head_Dim/2) --> (1, Seq_Len, 1, Head_Dim/2)
+    # Shape: (Seq_Len, Head_Dim/2) -> (1, Seq_Len, 1, Head_Dim/2)
     freqs_complex = freqs_complex.unsqueeze(0).unsqueeze(2)
-    # Multiply each complex number in the x_complex tensor by the corresponding complex number
-    # in the freqs_complex tensor
-    # Which results in the rotation of the complex number as shown in the Figure 1 of the paper
-    # (B, Seq_Len, H, Head_Dim/2) * (1, Seq_Len, 1, Head_Dim/2) = (B, Seq_Len, H, Head_Dim/2)
+    # Shape: (B, Seq_Len, H, Head_Dim/2) * (1, Seq_Len, 1, Head_Dim/2) = (B, Seq_Len, H, Head_Dim/2)
     x_rotated = x_complex * freqs_complex
-    # Convert the complex number back to the real number
-    # (B, Seq_Len, H, Head_Dim/2) -> (B, Seq_Len, H, Head_Dim/2, 2)
+    # Shape: (B, Seq_Len, H, Head_Dim/2) -> (B, Seq_Len, H, Head_Dim/2, 2)
     x_out = torch.view_as_real(x_rotated)
-    # (B, Seq_Len, H, Head_Dim/2, 2) -> (B, Seq_Len, H, Head_Dim)
+    # Shape: (B, Seq_Len, H, Head_Dim/2, 2) -> (B, Seq_Len, H, Head_Dim)
     x_out = x_out.reshape(*x.shape)
     return x_out.type_as(x).to(device)
 
 
-def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
+def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
     batch_size, seq_len, n_kv_heads, head_dim = x.shape
     if n_rep == 1:
         return x
@@ -95,6 +73,23 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
             expand(batch_size, seq_len, n_kv_heads, n_rep, head_dim).
             reshape(batch_size, seq_len, n_kv_heads * n_rep, head_dim)
             )
+
+
+class RMSNorm(nn.Module):
+    def __init__(self, dim: int, eps: float = 1e-6):
+        super().__init__()
+        self.eps = eps
+        # The gamma parameter
+        self.weight = nn.Parameter(torch.ones(dim))
+
+    def _norm(self, x: Tensor):
+        # (B, Seq_Len, Dim) * (B, Seq_Len, 1) = (B, Seq_Len, Dim)
+        # rsqrt: 1 / sqrt(x)
+        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+
+    def forward(self, x: Tensor):
+        # (Dim) * (B, Seq_Len, Dim) = (B, Seq_Len, Dim)
+        return self.weight * self._norm(x.float()).type_as(x)
 
 
 class SelfAttention(nn.Module):
@@ -120,7 +115,7 @@ class SelfAttention(nn.Module):
         self.cache_k = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
         self.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
 
-    def forward(self, x: torch.Tensor, start_pos: int, freqs_complex: torch.Tensor):
+    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor):
         batch_size, seq_len, _ = x.shape  # (B, 1, Dim)
 
         # (B, 1, Dim) -> (B, 1, H_Q * Head_Dim)
@@ -193,7 +188,7 @@ class FeedForward(nn.Module):
         self.w2 = nn.Linear(hidden_dim, args.dim, bias=False)
         self.w3 = nn.Linear(args.dim, hidden_dim, bias=False)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: Tensor):
         # (B, Seq_Len, Dim) --> (B, Seq_Len, Hidden_Dim)
         swish = F.silu(self.w1(x))
         # (B, Seq_Len, Dim) --> (B, Seq_Len, Hidden_Dim)
@@ -222,7 +217,7 @@ class EncoderBlock(nn.Module):
         # Normalization BEFORE the feed forward block
         self.ffn_norm = RMSNorm(args.dim, eps=args.norm_eps)
 
-    def forward(self, x: torch.Tensor, start_pos: int, freqs_complex: torch.Tensor):
+    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor):
         # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
         h = x + self.attention.forward(self.attention_norm(x), start_pos, freqs_complex)
         # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
@@ -248,11 +243,11 @@ class Transformer(nn.Module):
 
         self.norm = RMSNorm(args.dim, eps=args.norm_eps)
         self.output = nn.Linear(args.dim, self.vocab_size, bias=False)
-
         self.freqs_complex = precompute_theta_pos_frequencies(self.args.dim // self.args.n_heads,
-                                                              self.args.max_seq_len * 2, device=self.args.device)
+                                                              self.args.max_seq_len * 2,
+                                                              self.args.device)
 
-    def forward(self, tokens: torch.Tensor, start_pos: int):
+    def forward(self, tokens: Tensor, start_pos: int):
         # (B, Seq_Len)
         batch_size, seq_len = tokens.shape
         assert seq_len == 1, "Only one token at a time can be processed"
@@ -269,3 +264,127 @@ class Transformer(nn.Module):
         h = self.norm(h)
         output = self.output(h).float()
         return output
+
+
+class LLaMA:
+    def __init__(self, model: Transformer, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
+        self.model = model
+        self.tokenizer = tokenizer
+        self.args = model_args
+
+    @staticmethod
+    def build(checkpoints_dir: str, tokenizer_path: str, max_batch_size: int, max_seq_len: int = 2048,
+              device: str = 'cpu'):
+
+        checkpoints = sorted(Path(checkpoints_dir).glob("*.pth"))
+        assert len(checkpoints) > 0, f"no checkpoint files found in {checkpoints_dir}"
+        ckpt_path = checkpoints[0]
+        print(f'Loading checkpoint "{ckpt_path}"')
+        prev_time = time.time()
+        checkpoint = torch.load(ckpt_path, map_location="cpu")
+        print(f"Loaded checkpoint in {time.time() - prev_time:.2f}s")
+
+        with open(Path(checkpoints_dir) / "params.json", "r") as f:
+            params = json.loads(f.read())
+
+        model_args: ModelArgs = ModelArgs(
+            max_seq_len=max_seq_len,
+            max_batch_size=max_batch_size,
+            device=device,
+            **params
+        )
+
+        tokenizer = SentencePieceProcessor()
+        tokenizer.load(tokenizer_path)
+        model_args.vocab_size = tokenizer.vocab_size()
+
+        # if device == "cuda":
+        #     torch.set_default_tensor_type(torch.cuda.HalfTensor)
+        # else:
+        #     torch.set_default_tensor_type(torch.BFloat16Tensor)
+
+        model = Transformer(model_args).to(device)
+
+        # The only unmatched key in the checkpoint is rope.freqs. Remove it
+        del checkpoint['rope.freqs']
+        prev_time = time.time()
+        model.load_state_dict(checkpoint, strict=True)
+        print(f"Loaded state dict in {time.time() - prev_time:.2f}s")
+
+        return LLaMA(model, tokenizer, model_args)
+
+    def text_completion(self, prompts: list[str], temperature: float = 0.6, top_p: float = 0.9,
+                        max_gen_len: Optional[int] = None):
+        if max_gen_len is None:
+            max_gen_len = self.args.max_seq_len - 1
+        # Convert each prompt into tokens
+        prompt_tokens = [self.tokenizer.encode(prompt, out_type=int, add_bos=True, add_eos=False)
+                         for prompt in prompts]
+        # Make sure the batch size is not too large
+        batch_size = len(prompt_tokens)
+        assert batch_size <= self.args.max_batch_size, \
+            f"batch size must be less than or equal to {self.args.max_batch_size}"
+        max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
+        # Make sure the prompt length is not larger than the maximum sequence length
+        assert max_prompt_len <= self.args.max_seq_len, \
+            f"prompt length must be less than or equal to {self.args.max_seq_len}"
+        total_len = min(self.args.max_seq_len, max_gen_len + max_prompt_len)
+
+        # Create the list that will contain the generated tokens, along with the initial prompt tokens
+        pad_id = self.tokenizer.pad_id()
+        tokens = torch.full((batch_size, total_len), pad_id, dtype=torch.long, device=self.args.device)
+        for k, t in enumerate(prompt_tokens):
+            # Populate the initial tokens with the prompt tokens
+            tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=self.args.device)
+
+        eos_reached = torch.tensor([False] * batch_size, device=self.args.device)
+        prompt_tokens_mask = tokens != pad_id  # True if the token is a prompt token, False otherwise
+        cur_iterator = tqdm(range(1, total_len), desc="Generating tokens")
+        for cur_pos in cur_iterator:
+            with torch.no_grad():
+                logits = self.model.forward(tokens[:, cur_pos - 1:cur_pos], cur_pos)
+            if temperature > 0:
+                # The temperature is applied before the softmax
+                probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
+                next_token = self._sample_top_p(probs, top_p)
+            else:
+                # Greedily select the token with the max probability
+                next_token = torch.argmax(logits[:, -1], dim=-1)
+
+            next_token = next_token.reshape(-1)
+            # Only replace token if it is a padding token
+            next_token = torch.where(prompt_tokens_mask[:, cur_pos], tokens[:, cur_pos], next_token)
+            tokens[:, cur_pos] = next_token
+            # EOS is reached only if we found an EOS token for a padding position
+            eos_reached |= (~prompt_tokens_mask[:, cur_pos]) & (next_token == self.tokenizer.eos_id)
+            if all(eos_reached):
+                break
+
+        out_tokens = []
+        out_text = []
+        for prompt_index, current_prompt_tokens in enumerate(tokens.tolist()):
+            # Cut to the EOS token, if present
+            if self.tokenizer.eos_id in current_prompt_tokens:
+                eos_idx = current_prompt_tokens.index(self.tokenizer.eos_id)
+                current_prompt_tokens = current_prompt_tokens[:eos_idx]
+            out_tokens.append(current_prompt_tokens)
+            out_text.append(self.tokenizer.decode(current_prompt_tokens))
+        return (out_tokens, out_text)
+
+    def _sample_top_p(self, probs, p):
+        # (B, vocab_size)
+        probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
+        # (B, vocab_size)
+        probs_sum = torch.cumsum(probs_sort, dim=-1)
+        # (B, vocab_size)
+        # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
+        mask = probs_sum - probs_sort > p
+        # Zero out all the probabilities of tokens that are not selected by the Top P
+        probs_sort[mask] = 0.0
+        # Redistribute the probabilities so that they sum up to 1.
+        probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
+        # Sample a token (its index) from the top p distribution
+        next_token = torch.multinomial(probs_sort, num_samples=1)
+        # Get the token position in the vocabulary corresponding to the sampled index
+        next_token = torch.gather(probs_idx, -1, next_token)
+        return next_token
