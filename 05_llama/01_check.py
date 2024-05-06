@@ -69,7 +69,7 @@ def check_transformer():
         device=DEVICE
     )
 
-    model = Transformer(model_args).to(DEVICE)
+    model = LlamaModel(model_args).to(DEVICE)
     tokens = torch.randint(low=0, high=100, size=(BATCH_SIZE, 1), dtype=torch.int)
     summary(model, tokens, 1, show_input=True)
     output = model(tokens, 1)

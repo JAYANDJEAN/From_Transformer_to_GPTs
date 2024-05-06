@@ -1,4 +1,4 @@
-from llama2_scratch import LLaMA
+from llama2_scratch import LlamaForCausal
 import torch
 import json
 
@@ -10,7 +10,7 @@ torch.manual_seed(0)
 device = "cpu"
 model_path = '/Users/fengyuan/Documents/models/'
 
-model = LLaMA.build(
+model = LlamaForCausal.build(
     checkpoints_dir=model_path + 'Llama-2-7b/',
     tokenizer_path=model_path + 'Llama-2-7b/tokenizer.model',
     max_batch_size=len(prompts),

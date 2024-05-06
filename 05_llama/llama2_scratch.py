@@ -10,10 +10,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-
 from sentencepiece import SentencePieceProcessor
 
 
+# same, done
 @dataclass
 class ModelArgs:
     dim: int = 4096
@@ -21,16 +21,15 @@ class ModelArgs:
     n_heads: int = 32
     n_kv_heads: Optional[int] = None
     vocab_size: int = -1  # Later set in the build method
-    multiple_of: int = 256
+    multiple_of: int = 256  # make SwiGLU hidden layer size multiple of large power of 2
     ffn_dim_multiplier: Optional[float] = None
     norm_eps: float = 1e-5
-    # Needed for KV cache
     max_batch_size: int = 32
     max_seq_len: int = 2048
     device: str = None
 
 
-# done
+# same, done
 def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
     assert head_dim % 2 == 0, "Dimension must be divisible by 2"
     # Shape: (Head_Dim / 2)
@@ -46,7 +45,7 @@ def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, b
     return freqs_complex
 
 
-# done
+# same, done
 def apply_rotary_embeddings(x: Tensor, freqs_complex: Tensor, device: str):
     # Shape: (B, Seq_Len, H, Head_Dim) -> (B, Seq_Len, H, Head_Dim/2)
     # H * Head_Dim = dim
@@ -62,6 +61,7 @@ def apply_rotary_embeddings(x: Tensor, freqs_complex: Tensor, device: str):
     return x_out.type_as(x).to(device)
 
 
+# same, done
 def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
     batch_size, seq_len, n_kv_heads, head_dim = x.shape
     if n_rep == 1:
@@ -75,6 +75,7 @@ def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
             )
 
 
+# same,
 def sample_top_p(probs, p):
     # (B, vocab_size)
     probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
@@ -94,6 +95,7 @@ def sample_top_p(probs, p):
     return next_token
 
 
+# same, done
 class RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -111,7 +113,8 @@ class RMSNorm(nn.Module):
         return self.weight * self._norm(x.float()).type_as(x)
 
 
-class SelfAttention(nn.Module):
+# 加mask
+class Attention(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
 
@@ -219,7 +222,7 @@ class FeedForward(nn.Module):
         return x
 
 
-class EncoderBlock(nn.Module):
+class DecoderBlock(nn.Module):
 
     def __init__(self, args: ModelArgs):
         super().__init__()
@@ -228,7 +231,7 @@ class EncoderBlock(nn.Module):
         self.dim = args.dim
         self.head_dim = args.dim // args.n_heads
 
-        self.attention = SelfAttention(args)
+        self.attention = Attention(args)
         self.feed_forward = FeedForward(args)
 
         # Normalization BEFORE the attention block
@@ -244,7 +247,7 @@ class EncoderBlock(nn.Module):
         return out
 
 
-class Transformer(nn.Module):
+class LlamaModel(nn.Module):
 
     def __init__(self, args: ModelArgs):
         super().__init__()
@@ -258,7 +261,7 @@ class Transformer(nn.Module):
 
         self.layers = nn.ModuleList()
         for layer_id in range(args.n_layers):
-            self.layers.append(EncoderBlock(args))
+            self.layers.append(DecoderBlock(args))
 
         self.norm = RMSNorm(args.dim, eps=args.norm_eps)
         self.output = nn.Linear(args.dim, self.vocab_size, bias=False)
@@ -269,6 +272,7 @@ class Transformer(nn.Module):
     def forward(self, tokens: Tensor, start_pos: int):
         # (B, Seq_Len)
         batch_size, seq_len = tokens.shape
+        # 这里有问题啊
         assert seq_len == 1, "Only one token at a time can be processed"
 
         # (B, Seq_Len) -> (B, Seq_Len, Dim)
@@ -285,8 +289,8 @@ class Transformer(nn.Module):
         return output
 
 
-class LLaMA:
-    def __init__(self, model: Transformer, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
+class LlamaForCausal:
+    def __init__(self, model: LlamaModel, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
         self.model = model
         self.tokenizer = tokenizer
         self.args = model_args
@@ -322,7 +326,7 @@ class LLaMA:
         # else:
         #     torch.set_default_tensor_type(torch.BFloat16Tensor)
 
-        model = Transformer(model_args).to(device)
+        model = LlamaModel(model_args).to(device)
 
         # The only unmatched key in the checkpoint is rope.freqs. Remove it
         del checkpoint['rope.freqs']
@@ -330,7 +334,7 @@ class LLaMA:
         model.load_state_dict(checkpoint, strict=True)
         print(f"Loaded state dict in {time.time() - prev_time:.2f}s")
 
-        return LLaMA(model, tokenizer, model_args)
+        return LlamaForCausal(model, tokenizer, model_args)
 
     def text_completion(self, prompts: list[str], temperature: float = 0.6, top_p: float = 0.9,
                         max_gen_len: Optional[int] = None):
@@ -388,4 +392,8 @@ class LLaMA:
                 current_prompt_tokens = current_prompt_tokens[:eos_idx]
             out_tokens.append(current_prompt_tokens)
             out_text.append(self.tokenizer.decode(current_prompt_tokens))
-        return (out_tokens, out_text)
+        return out_tokens, out_text
+
+
+class LlamaForSequenceClassification:
+    pass
