@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from llama2_scratch import *
 from torch import Tensor
+import json
+from modelsummary import summary
 
 
 def check_rope():
@@ -54,12 +56,109 @@ def check_rms_norm():
     assert norm(x).shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
 
 
+def check_transformer():
+    model_args: ModelArgs = ModelArgs(
+        max_seq_len=MAX_SEQ_LEN,
+        max_batch_size=MAX_BATCH_SIZE,
+        dim=D_MODEL,
+        n_layers=N_LAYER,
+        n_heads=N_HEAD,
+        vocab_size=VOCAB_SIZE,
+        multiple_of=16,
+        norm_eps=1e-5,
+        device=DEVICE
+    )
+
+    model = Transformer(model_args).to(DEVICE)
+    tokens = torch.randint(low=0, high=100, size=(BATCH_SIZE, 1), dtype=torch.int)
+    summary(model, tokens, 1, show_input=True)
+    output = model(tokens, 1)
+    assert output.shape == (BATCH_SIZE, 1, VOCAB_SIZE)
+
+
+def check_train():
+    pass
+
+
+def check_inference():
+    tokenizer = SentencePieceProcessor()
+    with open('prompts.json', 'r') as file:
+        data = json.load(file)
+    prompts = data['prompts']
+    max_gen_len = MAX_SEQ_LEN - 1
+    tokenizer.load('/Users/yuan.feng/Downloads/tokenizer.model')
+
+    print('==========================tokenizer==========================')
+    prompt_tokens = [tokenizer.encode(prompt, out_type=int, add_bos=True, add_eos=False)
+                     for prompt in prompts]
+    token_ids = [1, 4103, 9632, 4223, 304, 5176, 29901, 13, 13, 344, 29874, 4932, 357, 1149, 301, 449, 276, 316, 2778,
+                 13, 412, 407, 837, 524, 1149, 6042, 354, 772, 440, 29878, 1318, 13, 572, 1878, 330, 3055, 1725, 1149,
+                 330, 3055, 1725, 4639, 28754, 13, 1173, 968, 1149]
+    print(tokenizer.decode(token_ids))
+    print([tokenizer.decode(i) for i in token_ids])
+
+    batch_size = len(prompt_tokens)
+    max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
+    total_len = min(MAX_SEQ_LEN, max_gen_len + max_prompt_len)
+    print(total_len)
+
+    pad_id = tokenizer.pad_id()
+    tokens = torch.full((batch_size, total_len), pad_id, dtype=torch.long, device=DEVICE)
+    print('==========================inference==========================')
+    # 把 prompt_tokens 写入
+    for k, t in enumerate(prompt_tokens):
+        tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=DEVICE)
+    print(tokens)
+
+    eos_reached = torch.tensor([False] * batch_size, device=DEVICE)
+    prompt_tokens_mask = tokens != pad_id  # True if the token is a prompt token, False otherwise
+    cur_iterator = tqdm(range(1, total_len), desc="Generating tokens")
+    temperature = 0.6
+    top_p = 0.9
+    for cur_pos in cur_iterator:
+        with torch.no_grad():
+            # 模型输入只有一个token，难道下一个token的出现只与这个token有关？
+            # logits = self.model.forward(tokens[:, cur_pos - 1:cur_pos], cur_pos)
+            logits = torch.randn(batch_size, 1, VOCAB_SIZE)
+
+        if temperature > 0:
+            probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
+            next_token = sample_top_p(probs, top_p)
+        else:
+            next_token = torch.argmax(logits[:, -1], dim=-1)
+        # shape: (batch_size)
+        next_token = next_token.reshape(-1)
+        # !!!!!! Only replace token if it is a padding token
+        next_token = torch.where(prompt_tokens_mask[:, cur_pos], tokens[:, cur_pos], next_token)
+        tokens[:, cur_pos] = next_token
+        # EOS is reached only if we found an EOS token for a padding position
+        eos_reached |= (~prompt_tokens_mask[:, cur_pos]) & (next_token == tokenizer.eos_id)
+        if all(eos_reached):
+            break
+
+    out_tokens = []
+    out_text = []
+    for prompt_index, current_prompt_tokens in enumerate(tokens.tolist()):
+        # Cut to the EOS token, if present
+        if tokenizer.eos_id in current_prompt_tokens:
+            eos_idx = current_prompt_tokens.index(tokenizer.eos_id)
+            current_prompt_tokens = current_prompt_tokens[:eos_idx]
+        out_tokens.append(current_prompt_tokens)
+        out_text.append(tokenizer.decode(current_prompt_tokens))
+    print(out_text)
+
+
 if __name__ == '__main__':
+    VOCAB_SIZE = 32000
+    SEQ_LEN = 1
+    MAX_SEQ_LEN = 2048
+    BATCH_SIZE = 16
+    MAX_BATCH_SIZE = 32
     MAX_LEN = 100
     D_MODEL = 512
-    BATCH_SIZE = 64
-    SEQ_LEN = 23
     N_HEAD = 8
+    N_LAYER = 6
     DIM_FF = 256
-    DROPOUT = 0.1
-    TGT_SEQ_LEN = 17
+    DEVICE = 'cpu'
+
+    check_inference()

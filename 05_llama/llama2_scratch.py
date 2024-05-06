@@ -75,6 +75,25 @@ def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
             )
 
 
+def sample_top_p(probs, p):
+    # (B, vocab_size)
+    probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
+    # (B, vocab_size)
+    probs_sum = torch.cumsum(probs_sort, dim=-1)
+    # (B, vocab_size)
+    # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
+    mask = probs_sum - probs_sort > p
+    # Zero out all the probabilities of tokens that are not selected by the Top P
+    probs_sort[mask] = 0.0
+    # Redistribute the probabilities so that they sum up to 1.
+    probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
+    # Sample a token (its index) from the top p distribution
+    next_token = torch.multinomial(probs_sort, num_samples=1)
+    # Get the token position in the vocabulary corresponding to the sampled index
+    next_token = torch.gather(probs_idx, -1, next_token)
+    return next_token
+
+
 class RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -346,7 +365,7 @@ class LLaMA:
             if temperature > 0:
                 # The temperature is applied before the softmax
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
-                next_token = self._sample_top_p(probs, top_p)
+                next_token = sample_top_p(probs, top_p)
             else:
                 # Greedily select the token with the max probability
                 next_token = torch.argmax(logits[:, -1], dim=-1)
@@ -370,21 +389,3 @@ class LLaMA:
             out_tokens.append(current_prompt_tokens)
             out_text.append(self.tokenizer.decode(current_prompt_tokens))
         return (out_tokens, out_text)
-
-    def _sample_top_p(self, probs, p):
-        # (B, vocab_size)
-        probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
-        # (B, vocab_size)
-        probs_sum = torch.cumsum(probs_sort, dim=-1)
-        # (B, vocab_size)
-        # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
-        mask = probs_sum - probs_sort > p
-        # Zero out all the probabilities of tokens that are not selected by the Top P
-        probs_sort[mask] = 0.0
-        # Redistribute the probabilities so that they sum up to 1.
-        probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
-        # Sample a token (its index) from the top p distribution
-        next_token = torch.multinomial(probs_sort, num_samples=1)
-        # Get the token position in the vocabulary corresponding to the sampled index
-        next_token = torch.gather(probs_idx, -1, next_token)
-        return next_token
