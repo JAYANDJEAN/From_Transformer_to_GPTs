@@ -12,8 +12,12 @@ import torch.nn.functional as F
 from torch import Tensor
 from sentencepiece import SentencePieceProcessor
 
+'''
+https://github.com/meta-llama/llama/
+https://github.com/hkproj/pytorch-llama
+'''
 
-# same, done
+
 @dataclass
 class ModelArgs:
     dim: int = 4096
@@ -29,7 +33,6 @@ class ModelArgs:
     device: str = None
 
 
-# same, done
 def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
     assert head_dim % 2 == 0, "Dimension must be divisible by 2"
     # Shape: (Head_Dim / 2)
@@ -45,7 +48,6 @@ def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, b
     return freqs_complex
 
 
-# same, done
 def apply_rotary_embeddings(x: Tensor, freqs_complex: Tensor, device: str):
     # Shape: (B, Seq_Len, H, Head_Dim) -> (B, Seq_Len, H, Head_Dim/2)
     # H * Head_Dim = dim
@@ -61,7 +63,6 @@ def apply_rotary_embeddings(x: Tensor, freqs_complex: Tensor, device: str):
     return x_out.type_as(x).to(device)
 
 
-# same, done
 def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
     batch_size, seq_len, n_kv_heads, head_dim = x.shape
     if n_rep == 1:
@@ -75,7 +76,6 @@ def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
             )
 
 
-# same,
 def sample_top_p(probs, p):
     # (B, vocab_size)
     probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
@@ -95,7 +95,6 @@ def sample_top_p(probs, p):
     return next_token
 
 
-# same, done
 class RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -113,7 +112,6 @@ class RMSNorm(nn.Module):
         return self.weight * self._norm(x.float()).type_as(x)
 
 
-# 加mask
 class Attention(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
@@ -132,21 +130,16 @@ class Attention(nn.Module):
         self.wq = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
         self.wk = nn.Linear(args.dim, self.n_kv_heads * self.head_dim, bias=False)
         self.wv = nn.Linear(args.dim, self.n_kv_heads * self.head_dim, bias=False)
+        # Linear transformation for output.
         self.wo = nn.Linear(args.n_heads * self.head_dim, args.dim, bias=False)
 
         self.cache_k = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
         self.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
 
-    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor):
-        batch_size, seq_len, _ = x.shape  # (B, 1, Dim)
-
-        # (B, 1, Dim) -> (B, 1, H_Q * Head_Dim)
-        xq = self.wq(x)
-        # (B, 1, Dim) -> (B, 1, H_KV * Head_Dim)
-        xk = self.wk(x)
-        # (B, 1, Dim) -> (B, 1, H_KV * Head_Dim)
-        xv = self.wv(x)
-
+    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor]):
+        batch_size, seq_len, _ = x.shape
+        # (B, 1, Dim) -> (B, 1, H * Head_Dim)
+        xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
         # (B, 1, H_Q * Head_Dim) -> (B, 1, H_Q, Head_Dim)
         xq = xq.view(batch_size, seq_len, self.n_heads_q, self.head_dim)
         # (B, 1, H_KV * Head_Dim) -> (B, 1, H_KV, Head_Dim)
@@ -170,7 +163,6 @@ class Attention(nn.Module):
 
         # Since every group of Q shares the same K and V heads,
         # just repeat the K and V heads for every Q in the same group.
-
         # (B, Seq_Len_KV, H_KV, Head_Dim) --> (B, Seq_Len_KV, H_Q, Head_Dim)
         keys = repeat_kv(keys, self.n_rep)
         # (B, Seq_Len_KV, H_KV, Head_Dim) --> (B, Seq_Len_KV, H_Q, Head_Dim)
@@ -185,6 +177,8 @@ class Attention(nn.Module):
 
         # (B, H_Q, 1, Head_Dim) @ (B, H_Q, Head_Dim, Seq_Len_KV) -> (B, H_Q, 1, Seq_Len_KV)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
+        if mask is not None:
+            scores += mask  # (bs, n_local_heads, seqlen, cache_len + seqlen)
         # (B, H_Q, 1, Seq_Len_KV) -> (B, H_Q, 1, Seq_Len_KV)
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
 
@@ -223,7 +217,6 @@ class FeedForward(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-
     def __init__(self, args: ModelArgs):
         super().__init__()
 
@@ -239,11 +232,11 @@ class DecoderBlock(nn.Module):
         # Normalization BEFORE the feed forward block
         self.ffn_norm = RMSNorm(args.dim, eps=args.norm_eps)
 
-    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor):
+    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor], ):
         # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
-        h = x + self.attention.forward(self.attention_norm(x), start_pos, freqs_complex)
+        h = x + self.attention(self.attention_norm(x), start_pos, freqs_complex, mask)
         # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
-        out = h + self.feed_forward.forward(self.ffn_norm(h))
+        out = h + self.feed_forward(self.ffn_norm(h))
         return out
 
 
@@ -272,18 +265,22 @@ class LlamaModel(nn.Module):
     def forward(self, tokens: Tensor, start_pos: int):
         # (B, Seq_Len)
         batch_size, seq_len = tokens.shape
-        # 这里有问题啊
-        assert seq_len == 1, "Only one token at a time can be processed"
+        # assert seq_len == 1, "Only one token at a time can be processed"
 
-        # (B, Seq_Len) -> (B, Seq_Len, Dim)
         h = self.tok_embeddings(tokens)
 
-        # Retrieve the pairs (m, theta) corresponding to the positions [start_pos, start_pos + seq_len]
         freqs_complex = self.freqs_complex[start_pos:start_pos + seq_len]
+        mask = None
+        if seq_len > 1:
+            mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"),
+                                         device=self.args.device),
+                              diagonal=1)
+            mask = torch.hstack(
+                [torch.zeros((seq_len, start_pos), device=self.args.device), mask]
+            ).type_as(h)
 
-        # Consecutively apply all the encoder layers
         for layer in self.layers:
-            h = layer(h, start_pos, freqs_complex)
+            h = layer(h, start_pos, freqs_complex, mask)
         h = self.norm(h)
         output = self.output(h).float()
         return output
@@ -320,15 +317,9 @@ class LlamaForCausal:
         tokenizer = SentencePieceProcessor()
         tokenizer.load(tokenizer_path)
         model_args.vocab_size = tokenizer.vocab_size()
-
-        # if device == "cuda":
-        #     torch.set_default_tensor_type(torch.cuda.HalfTensor)
-        # else:
-        #     torch.set_default_tensor_type(torch.BFloat16Tensor)
-
         model = LlamaModel(model_args).to(device)
 
-        # The only unmatched key in the checkpoint is rope.freqs. Remove it
+        # !!!!!! The only unmatched key in the checkpoint is rope.freqs. Remove it
         del checkpoint['rope.freqs']
         prev_time = time.time()
         model.load_state_dict(checkpoint, strict=True)
@@ -347,6 +338,7 @@ class LlamaForCausal:
         batch_size = len(prompt_tokens)
         assert batch_size <= self.args.max_batch_size, \
             f"batch size must be less than or equal to {self.args.max_batch_size}"
+        min_prompt_len = min(len(prompt) for prompt in prompt_tokens)
         max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
         # Make sure the prompt length is not larger than the maximum sequence length
         assert max_prompt_len <= self.args.max_seq_len, \
@@ -361,17 +353,16 @@ class LlamaForCausal:
             tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=self.args.device)
 
         eos_reached = torch.tensor([False] * batch_size, device=self.args.device)
-        prompt_tokens_mask = tokens != pad_id  # True if the token is a prompt token, False otherwise
-        cur_iterator = tqdm(range(1, total_len), desc="Generating tokens")
+        prompt_tokens_mask = tokens != pad_id
+        cur_iterator = tqdm(range(min_prompt_len, total_len), desc="Generating tokens")
+        prev_pos = 0
         for cur_pos in cur_iterator:
             with torch.no_grad():
-                logits = self.model.forward(tokens[:, cur_pos - 1:cur_pos], cur_pos)
+                logits = self.model(tokens[:, prev_pos:cur_pos], prev_pos)
             if temperature > 0:
-                # The temperature is applied before the softmax
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
                 next_token = sample_top_p(probs, top_p)
             else:
-                # Greedily select the token with the max probability
                 next_token = torch.argmax(logits[:, -1], dim=-1)
 
             next_token = next_token.reshape(-1)
@@ -380,11 +371,11 @@ class LlamaForCausal:
             tokens[:, cur_pos] = next_token
             # EOS is reached only if we found an EOS token for a padding position
             eos_reached |= (~prompt_tokens_mask[:, cur_pos]) & (next_token == self.tokenizer.eos_id)
+            prev_pos = cur_pos
             if all(eos_reached):
                 break
 
-        out_tokens = []
-        out_text = []
+        out_tokens, out_text = [], []
         for prompt_index, current_prompt_tokens in enumerate(tokens.tolist()):
             # Cut to the EOS token, if present
             if self.tokenizer.eos_id in current_prompt_tokens:

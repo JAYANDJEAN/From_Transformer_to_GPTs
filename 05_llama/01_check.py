@@ -56,6 +56,28 @@ def check_rms_norm():
     assert norm(x).shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
 
 
+def check_silu():
+    import torch
+    import matplotlib.pyplot as plt
+
+    # 定义 SiLU 函数
+    def silu(x):
+        return x * torch.sigmoid(x)
+
+    # 生成输入数据
+    x = torch.linspace(-5, 5, 100)
+    y = silu(x)
+
+    # 绘制函数图像
+    plt.plot(x.numpy(), y.numpy(), label='SiLU')
+    plt.xlabel('x')
+    plt.ylabel('SiLU(x)')
+    plt.title('SiLU Function')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('SiLU.png')
+
+
 def check_transformer():
     model_args: ModelArgs = ModelArgs(
         max_seq_len=MAX_SEQ_LEN,
@@ -117,8 +139,6 @@ def check_inference():
     top_p = 0.9
     for cur_pos in cur_iterator:
         with torch.no_grad():
-            # 模型输入只有一个token，难道下一个token的出现只与这个token有关？
-            # logits = self.model.forward(tokens[:, cur_pos - 1:cur_pos], cur_pos)
             logits = torch.randn(batch_size, 1, VOCAB_SIZE)
 
         if temperature > 0:
@@ -161,4 +181,4 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    check_inference()
+    check_silu()
