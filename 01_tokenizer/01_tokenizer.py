@@ -2,6 +2,7 @@ from transformers import AutoTokenizer
 from torchtext.data.utils import get_tokenizer
 
 model_list = ['openai-community/gpt2', 'google-bert/bert-base-uncased']
+# llama
 corpus = ["Ein Mann in grün hält eine Gitarre, während der andere Mann sein Hemd ansieht.",
           "A man in green holds a guitar while the other man observes his shirt."]
 tokenizer0 = get_tokenizer('spacy', language='de_core_news_sm')

@@ -5,7 +5,7 @@ from modelsummary import summary
 from models import (PositionalEncoding, ScaleDotProductAttention,
                     MultiHeadAttention, EncoderLayer, DecoderLayer,
                     TransformerScratch, TransformerTorch)
-from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang
+from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang, translate
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -223,6 +223,20 @@ def check_data():
     print('----------------------------eval-------------------------------')
     memory = transformer.encode(src, src_mask)
     print(memory.shape)  # (N, S, E)
+
+
+def check_translate():
+    src_ = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
+    t2i, voc, train_loader, eval_loader = prepare_dataset(128)
+    transformer = TransformerTorch(num_encoder_layers=3,
+                                   num_decoder_layers=3,
+                                   d_model=512,
+                                   n_head=8,
+                                   src_vocab_size=len(voc[src_lang]),
+                                   tgt_vocab_size=len(voc[tgt_lang])
+                                   ).to('cpu')
+
+    print("Translated sentence:", translate(transformer, src_, t2i, voc, 'cpu'))
 
 
 if __name__ == '__main__':

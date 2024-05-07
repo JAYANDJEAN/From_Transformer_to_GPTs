@@ -7,8 +7,10 @@ with open('../00_assets/prompts.json', 'r') as file:
 
 prompts = data['prompts']
 torch.manual_seed(0)
-device = "cpu"
+
 model_path = '/Users/fengyuan/Documents/models/'
+# 目前m3 max上的cpu可跑，还未测试cuda，mps报错，未细看
+device = "cpu"
 
 model = LlamaForCompletion.build(
     checkpoints_dir=model_path + 'Llama-2-7b/',

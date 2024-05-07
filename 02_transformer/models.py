@@ -3,10 +3,6 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-'''
-包含两种实现方式，一种是基于torch，手写，一种是直接点用nn.Transformer
-'''
-
 
 class TokenEmbedding(nn.Module):
     def __init__(self, vocab_size: int, d_model: int):
