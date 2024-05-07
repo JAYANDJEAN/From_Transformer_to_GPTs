@@ -124,6 +124,10 @@ def check_kv_cache():
         print(output2.squeeze())
 
 
+def check_feed_forward():
+    pass
+
+
 def check_transformer():
     model_args: ModelArgs = ModelArgs(
         max_seq_len=MAX_SEQ_LEN,
