@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer, LlamaForCausalLM
 import json
 
-with open('prompts.json', 'r') as file:
+with open('../00_assets/prompts.json', 'r') as file:
     data = json.load(file)
 prompts = data['prompts']
 model_path = "/Users/fengyuan/Documents/models/"

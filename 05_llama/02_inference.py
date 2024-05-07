@@ -2,7 +2,7 @@ from llama2_scratch import LlamaForCompletion
 import torch
 import json
 
-with open('prompts.json', 'r') as file:
+with open('../00_assets/prompts.json', 'r') as file:
     data = json.load(file)
 
 prompts = data['prompts']

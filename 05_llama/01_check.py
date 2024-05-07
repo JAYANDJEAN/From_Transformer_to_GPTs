@@ -48,7 +48,7 @@ def check_rope():
         plt.colorbar()
 
     plt.tight_layout()
-    plt.savefig('PE and RoPE.png')
+    plt.savefig('../00_assets/PE and RoPE.png')
 
 
 def check_rms_norm():
@@ -61,18 +61,16 @@ def check_silu():
     def silu(x):
         return x * torch.sigmoid(x)
 
-    # 生成输入数据
     x = torch.linspace(-5, 5, 100)
     y = silu(x)
 
-    # 绘制函数图像
     plt.plot(x.numpy(), y.numpy(), label='SiLU')
     plt.xlabel('x')
     plt.ylabel('SiLU(x)')
     plt.title('SiLU Function')
     plt.grid(True)
     plt.legend()
-    plt.savefig('SiLU.png')
+    plt.savefig('../00_assets/SiLU.png')
 
 
 def check_transformer():
@@ -101,7 +99,7 @@ def check_train():
 
 def check_tokenizer():
     tokenizer = SentencePieceProcessor()
-    with open('prompts.json', 'r') as file:
+    with open('../00_assets/prompts.json', 'r') as file:
         data = json.load(file)
     prompts = data['prompts']
     max_gen_len = MAX_SEQ_LEN - 1
@@ -130,4 +128,4 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    check_silu()
+    check_rope()

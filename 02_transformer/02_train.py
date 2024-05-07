@@ -105,7 +105,7 @@ def train_and_translate(parameters):
     print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
-with open('scratch_v1.yml', 'r') as file:
+with open('../00_assets/scratch_v1.yml', 'r') as file:
     config = yaml.safe_load(file)
 
 train_and_translate(config)
