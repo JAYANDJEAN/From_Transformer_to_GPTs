@@ -150,7 +150,8 @@ class Attention(nn.Module):
         self.cache_v[:batch_size, start_pos: start_pos + seq_len] = xv
 
         # -> (batch_size, seq_len_kv, n_head_kv, head_dim)
-        # 这里是关键，也就是计算当前token，是拿到了之前的token
+        # ！！！这里是关键，也就是计算当前token，是拿到了之前的token
+        # https://github.com/meta-llama/llama/issues/151
         keys = self.cache_k[:batch_size, 0: start_pos + seq_len]
         values = self.cache_v[:batch_size, 0: start_pos + seq_len]
 
@@ -187,7 +188,6 @@ class Attention(nn.Module):
 class FeedForward(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
-        # 怎么计算这么复杂
         hidden_dim = 4 * args.dim
         hidden_dim = int(2 * hidden_dim / 3)
         if args.ffn_dim_multiplier is not None:
@@ -200,8 +200,7 @@ class FeedForward(nn.Module):
         self.w3 = nn.Linear(args.dim, hidden_dim, bias=False)
 
     def forward(self, x: Tensor):
-        # todo
-        # 为什么设计成这样，挺复杂的。
+        # 为什么设计成这样? 看 GLU Variants Improve Transformer
         # (batch_size, seq_len, dim) -> (batch_size, seq_len, hidden_dim)
         swish = F.silu(self.w1(x))
         # (batch_size, seq_len, dim) -> (batch_size, seq_len, hidden_dim)
@@ -282,7 +281,6 @@ class LlamaModel(nn.Module):
         return output
 
 
-# 修改一下代码组织方式
 class LlamaForCompletion:
     def __init__(self, model: LlamaModel, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
         self.model = model
