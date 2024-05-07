@@ -20,7 +20,7 @@ https://github.com/hkproj/pytorch-llama
 
 @dataclass
 class ModelArgs:
-    dim: int = 4096
+    dim: int = 4096  # d_model
     n_layers: int = 32
     n_heads: int = 32
     n_kv_heads: Optional[int] = None
@@ -34,31 +34,32 @@ class ModelArgs:
 
 
 def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
-    assert head_dim % 2 == 0, "Dimension must be divisible by 2"
-    # Shape: (Head_Dim / 2)
+    assert head_dim % 2 == 0, "dimension must be divisible by 2"
+    # Shape: (head_dim / 2)
     theta_numerator = torch.arange(0, head_dim, 2).float()
-    # Shape: (Head_Dim / 2)
-    theta = 1.0 / (base ** (theta_numerator / head_dim)).to(device)  # (Dim / 2)
-    # Shape: (Seq_Len)
+    # Shape: (head_dim / 2)
+    theta = 1.0 / (base ** (theta_numerator / head_dim)).to(device)
+    # Shape: (seq_len)
     m = torch.arange(seq_len, device=device)
-    # Shape: (Seq_Len) outer_product* (Head_Dim / 2) -> (Seq_Len, Head_Dim / 2)
+    # Shape: (seq_len) outer_product* (head_dim / 2) -> (seq_len, head_dim / 2)
     freqs = torch.outer(m, theta).float()
-    # Shape: (Seq_Len, Head_Dim / 2) -> (Seq_Len, Head_Dim / 2)
+    # Shape: (seq_len, head_dim / 2) -> (seq_len, head_dim / 2)
     freqs_complex = torch.polar(torch.ones_like(freqs), freqs)
     return freqs_complex
 
 
 def apply_rotary_embeddings(x: Tensor, freqs_complex: Tensor, device: str):
-    # Shape: (B, Seq_Len, H, Head_Dim) -> (B, Seq_Len, H, Head_Dim/2)
-    # H * Head_Dim = dim
+    # Shape: (batch_size, seq_len, n_head, head_dim) -> (batch_size, seq_len, n_head, head_dim/2)
+    # n_head * head_dim = dim
     x_complex = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
-    # Shape: (Seq_Len, Head_Dim/2) -> (1, Seq_Len, 1, Head_Dim/2)
+    # Shape: (seq_len, head_dim/2) -> (1, seq_len, 1, head_dim/2)
     freqs_complex = freqs_complex.unsqueeze(0).unsqueeze(2)
-    # Shape: (B, Seq_Len, H, Head_Dim/2) * (1, Seq_Len, 1, Head_Dim/2) = (B, Seq_Len, H, Head_Dim/2)
+    # Shape: (batch_size, seq_len, n_head, head_dim/2) * (1, seq_len, 1, head_dim/2) 
+    # = (batch_size, seq_len, n_head, head_dim/2)
     x_rotated = x_complex * freqs_complex
-    # Shape: (B, Seq_Len, H, Head_Dim/2) -> (B, Seq_Len, H, Head_Dim/2, 2)
+    # Shape: (batch_size, seq_len, n_head, head_dim/2) -> (batch_size, seq_len, n_head, head_dim/2, 2)
     x_out = torch.view_as_real(x_rotated)
-    # Shape: (B, Seq_Len, H, Head_Dim/2, 2) -> (B, Seq_Len, H, Head_Dim)
+    # Shape: (batch_size, seq_len, n_head, head_dim/2, 2) -> (batch_size, seq_len, n_head, head_dim)
     x_out = x_out.reshape(*x.shape)
     return x_out.type_as(x).to(device)
 
@@ -67,9 +68,9 @@ def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
     batch_size, seq_len, n_kv_heads, head_dim = x.shape
     if n_rep == 1:
         return x
-    # (B, Seq_Len, N_KV_Heads, 1, Head_Dim) ->
-    # (B, Seq_Len, N_KV_Heads, N_Rep, Head_Dim) ->
-    # (B, Seq_Len, N_KV_Heads * N_Rep, Head_Dim)
+    # (batch_size, seq_len, n_kv_head, 1, head_dim) ->
+    # (batch_size, seq_len, n_kv_head, n_rep, head_dim) ->
+    # (batch_size, seq_len, n_kv_head * n_rep, head_dim)
     return (x[:, :, :, None, :].
             expand(batch_size, seq_len, n_kv_heads, n_rep, head_dim).
             reshape(batch_size, seq_len, n_kv_heads * n_rep, head_dim)
@@ -77,12 +78,11 @@ def repeat_kv(x: Tensor, n_rep: int) -> Tensor:
 
 
 def sample_top_p(probs, p):
-    # (B, vocab_size)
+    # (batch_size, vocab_size)
     probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
-    # (B, vocab_size)
+    # (batch_size, vocab_size)
     probs_sum = torch.cumsum(probs_sort, dim=-1)
-    # (B, vocab_size)
-    # (Substracting "probs_sort" shifts the cumulative sum by 1 position to the right before masking)
+    # (batch_size, vocab_size)
     mask = probs_sum - probs_sort > p
     # Zero out all the probabilities of tokens that are not selected by the Top P
     probs_sort[mask] = 0.0
@@ -103,27 +103,21 @@ class RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(dim))
 
     def _norm(self, x: Tensor):
-        # (B, Seq_Len, Dim) * (B, Seq_Len, 1) = (B, Seq_Len, Dim)
+        # (batch_size, seq_len, dim) * (batch_size, seq_len, 1) = (batch_size, seq_len, dim)
         # rsqrt: 1 / sqrt(x)
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x: Tensor):
-        # (Dim) * (B, Seq_Len, Dim) = (B, Seq_Len, Dim)
+        # (dim) * (batch_size, seq_len, dim) = (batch_size, seq_len, dim)
         return self.weight * self._norm(x.float()).type_as(x)
 
 
 class Attention(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
-
-        # Indicates the number of heads for the Keys and Values
         self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
-        # Indicates the number of heads for the Queries
         self.n_heads_q = args.n_heads
-        # Indicates how many times the Keys and Values should be repeated
         self.n_rep = self.n_heads_q // self.n_kv_heads
-        # Indicates the dimension of each head, that is, the part of the embedding
-        # that each head will be responsible for
         self.head_dim = args.dim // args.n_heads
         self.device = args.device
 
@@ -137,62 +131,62 @@ class Attention(nn.Module):
         self.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
 
     def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor]):
+        # x: (batch_size, seq_len, dim)
         batch_size, seq_len, _ = x.shape
-        # (B, 1, Dim) -> (B, 1, H * Head_Dim)
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
-        # (B, 1, H_Q * Head_Dim) -> (B, 1, H_Q, Head_Dim)
+        # -> (batch_size, seq_len, n_head_q, head_dim)
         xq = xq.view(batch_size, seq_len, self.n_heads_q, self.head_dim)
-        # (B, 1, H_KV * Head_Dim) -> (B, 1, H_KV, Head_Dim)
         xk = xk.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
-        # (B, 1, H_KV * Head_Dim) -> (B, 1, H_KV, Head_Dim)
         xv = xv.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
 
-        # (B, 1, H_Q, Head_Dim) --> (B, 1, H_Q, Head_Dim)
+        # -> (batch_size, seq_len, n_head_q, head_dim)
         xq = apply_rotary_embeddings(xq, freqs_complex, self.device)
-        # (B, 1, H_KV, Head_Dim) --> (B, 1, H_KV, Head_Dim)
+        # -> (batch_size, seq_len, n_head_kv, head_dim)
         xk = apply_rotary_embeddings(xk, freqs_complex, self.device)
 
-        # Replace the entry in the cache
+        # 保存
         self.cache_k[:batch_size, start_pos: start_pos + seq_len] = xk
         self.cache_v[:batch_size, start_pos: start_pos + seq_len] = xv
 
-        # (B, Seq_Len_KV, H_KV, Head_Dim)
-        keys = self.cache_k[:batch_size, : start_pos + seq_len]
-        # (B, Seq_Len_KV, H_KV, Head_Dim)
-        values = self.cache_v[:batch_size, : start_pos + seq_len]
+        # -> (batch_size, seq_len_kv, n_head_kv, head_dim)
+        # 这里是关键，也就是计算当前token，是拿到了之前的token
+        keys = self.cache_k[:batch_size, 0: start_pos + seq_len]
+        values = self.cache_v[:batch_size, 0: start_pos + seq_len]
 
-        # Since every group of Q shares the same K and V heads,
-        # just repeat the K and V heads for every Q in the same group.
-        # (B, Seq_Len_KV, H_KV, Head_Dim) --> (B, Seq_Len_KV, H_Q, Head_Dim)
+        # (batch_size, seq_len_kv, n_head_q, head_dim)
+        # 因为 self.n_rep = self.n_heads_q // self.n_kv_heads
         keys = repeat_kv(keys, self.n_rep)
-        # (B, Seq_Len_KV, H_KV, Head_Dim) --> (B, Seq_Len_KV, H_Q, Head_Dim)
         values = repeat_kv(values, self.n_rep)
 
-        # (B, 1, H_Q, Head_Dim) -> (B, H_Q, 1, Head_Dim)
+        # -> (batch_size, n_head_q, seq_len, head_dim)
         xq = xq.transpose(1, 2)
-        # (B, Seq_Len_KV, H_Q, Head_Dim) -> (B, H_Q, Seq_Len_KV, Head_Dim)
+        # -> (batch_size, n_head_q, seq_len_kv, head_dim)
         keys = keys.transpose(1, 2)
-        # (B, Seq_Len_KV, H_Q, Head_Dim) -> (B, H_Q, Seq_Len_KV, Head_Dim)
+        # -> (batch_size, n_head_q, seq_len_kv, head_dim)
         values = values.transpose(1, 2)
 
-        # (B, H_Q, 1, Head_Dim) @ (B, H_Q, Head_Dim, Seq_Len_KV) -> (B, H_Q, 1, Seq_Len_KV)
+        # (batch_size, n_head_q, seq_len, head_dim) @ (batch_size, n_head_q, head_dim, seq_len_kv)
+        # -> (batch_size, n_head_q, seq_len, seq_len_kv)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
-            scores += mask  # (bs, n_local_heads, seqlen, cache_len + seqlen)
-        # (B, H_Q, 1, Seq_Len_KV) -> (B, H_Q, 1, Seq_Len_KV)
+            scores += mask  # (batch_size, n_head_q, seq_len, seq_len_kv)
+        # -> (batch_size, n_head_q, seq_len, seq_len_kv)
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
 
-        # (B, H_Q, 1, Seq_Len) @ (B, H_Q, Seq_Len_KV, Head_Dim) -> (B, H_Q, 1, Head_Dim)
+        # (batch_size, n_head_q, seq_len, seq_len_kv) @ (batch_size, n_head_q, seq_len_kv, head_dim)
+        # -> (batch_size, n_head_q, seq_len, head_dim)
         output = torch.matmul(scores, values)
-        # (B, H_Q, 1, Head_Dim) -> (B, 1, H_Q, Head_Dim) -> (B, 1, Dim)
+        # (batch_size, n_head_q, seq_len, head_dim) -> (batch_size, seq_len, n_head_q, head_dim)
+        # -> (batch_size, seq_len, dim)
         output = (output.transpose(1, 2).contiguous().view(batch_size, seq_len, -1))
-        return self.wo(output)  # (B, 1, Dim) -> (B, 1, Dim)
+        # (batch_size, seq_len, dim) -> (batch_size, seq_len, dim)
+        return self.wo(output)
 
 
 class FeedForward(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
-
+        # 怎么计算这么复杂
         hidden_dim = 4 * args.dim
         hidden_dim = int(2 * hidden_dim / 3)
         if args.ffn_dim_multiplier is not None:
@@ -205,13 +199,14 @@ class FeedForward(nn.Module):
         self.w3 = nn.Linear(args.dim, hidden_dim, bias=False)
 
     def forward(self, x: Tensor):
-        # (B, Seq_Len, Dim) --> (B, Seq_Len, Hidden_Dim)
+        # (batch_size, seq_len, dim) -> (batch_size, seq_len, hidden_dim)
         swish = F.silu(self.w1(x))
-        # (B, Seq_Len, Dim) --> (B, Seq_Len, Hidden_Dim)
+        # (batch_size, seq_len, dim) -> (batch_size, seq_len, hidden_dim)
         x_V = self.w3(x)
-        # (B, Seq_Len, Hidden_Dim) * (B, Seq_Len, Hidden_Dim) --> (B, Seq_Len, Hidden_Dim)
+        # (batch_size, seq_len, hidden_dim) * (batch_size, seq_len, hidden_dim)
+        # -> (batch_size, seq_len, hidden_dim)
         x = swish * x_V
-        # (B, Seq_Len, Hidden_Dim) --> (B, Seq_Len, Dim)
+        # (batch_size, seq_len, hidden_dim) -> (batch_size, seq_len, dim)
         x = self.w2(x)
         return x
 
@@ -224,6 +219,8 @@ class DecoderBlock(nn.Module):
         self.dim = args.dim
         self.head_dim = args.dim // args.n_heads
 
+        # Attention, FeedForward 都是输入：(batch_size, seq_len, dim)
+        # 输出：(batch_size, seq_len, dim)
         self.attention = Attention(args)
         self.feed_forward = FeedForward(args)
 
@@ -233,18 +230,16 @@ class DecoderBlock(nn.Module):
         self.ffn_norm = RMSNorm(args.dim, eps=args.norm_eps)
 
     def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor], ):
-        # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
+        # (batch_size, seq_len, dim) + (batch_size, seq_len, dim) -> (batch_size, seq_len, dim)
         h = x + self.attention(self.attention_norm(x), start_pos, freqs_complex, mask)
-        # (B, Seq_Len, Dim) + (B, Seq_Len, Dim) --> (B, Seq_Len, Dim)
+        # (batch_size, seq_len, dim) + (batch_size, seq_len, dim) -> (batch_size, seq_len, dim)
         out = h + self.feed_forward(self.ffn_norm(h))
         return out
 
 
 class LlamaModel(nn.Module):
-
     def __init__(self, args: ModelArgs):
         super().__init__()
-
         assert args.vocab_size != -1, "Vocab size must be set"
 
         self.args = args
@@ -263,14 +258,12 @@ class LlamaModel(nn.Module):
                                                               self.args.device)
 
     def forward(self, tokens: Tensor, start_pos: int):
-        # (B, Seq_Len)
+        # (batch_size, seq_len)
         batch_size, seq_len = tokens.shape
-        # assert seq_len == 1, "Only one token at a time can be processed"
-
         h = self.tok_embeddings(tokens)
-
         freqs_complex = self.freqs_complex[start_pos:start_pos + seq_len]
         mask = None
+        # 当第一次读入prompt时，prompt较长，可以加mask一次计算，以后读入单个token，就不需要mask
         if seq_len > 1:
             mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"),
                                          device=self.args.device),
@@ -286,8 +279,9 @@ class LlamaModel(nn.Module):
         return output
 
 
-class LlamaForCausal:
+class LlamaForCompletion(nn.Module):
     def __init__(self, model: LlamaModel, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
+        super().__init__()
         self.model = model
         self.tokenizer = tokenizer
         self.args = model_args
@@ -325,10 +319,12 @@ class LlamaForCausal:
         model.load_state_dict(checkpoint, strict=True)
         print(f"Loaded state dict in {time.time() - prev_time:.2f}s")
 
-        return LlamaForCausal(model, tokenizer, model_args)
+        return LlamaForCompletion(model, tokenizer, model_args)
 
-    def text_completion(self, prompts: list[str], temperature: float = 0.6, top_p: float = 0.9,
-                        max_gen_len: Optional[int] = None):
+    def forward(self, prompts: list[str],
+                temperature: float = 0.6,
+                top_p: float = 0.9,
+                max_gen_len: Optional[int] = None):
         if max_gen_len is None:
             max_gen_len = self.args.max_seq_len - 1
         # Convert each prompt into tokens

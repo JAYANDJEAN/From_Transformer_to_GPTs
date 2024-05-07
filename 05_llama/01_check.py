@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from llama2_scratch import *
 from torch import Tensor
+import torch
 import json
 from modelsummary import summary
 
@@ -57,10 +58,6 @@ def check_rms_norm():
 
 
 def check_silu():
-    import torch
-    import matplotlib.pyplot as plt
-
-    # 定义 SiLU 函数
     def silu(x):
         return x * torch.sigmoid(x)
 
