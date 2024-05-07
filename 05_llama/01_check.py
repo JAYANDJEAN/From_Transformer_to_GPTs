@@ -99,7 +99,7 @@ def check_train():
     pass
 
 
-def check_inference():
+def check_tokenizer():
     tokenizer = SentencePieceProcessor()
     with open('prompts.json', 'r') as file:
         data = json.load(file)
@@ -115,54 +115,6 @@ def check_inference():
                  330, 3055, 1725, 4639, 28754, 13, 1173, 968, 1149]
     print(tokenizer.decode(token_ids))
     print([tokenizer.decode(i) for i in token_ids])
-
-    batch_size = len(prompt_tokens)
-    max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
-    total_len = min(MAX_SEQ_LEN, max_gen_len + max_prompt_len)
-    print(total_len)
-
-    pad_id = tokenizer.pad_id()
-    tokens = torch.full((batch_size, total_len), pad_id, dtype=torch.long, device=DEVICE)
-    print('==========================inference==========================')
-    # 把 prompt_tokens 写入
-    for k, t in enumerate(prompt_tokens):
-        tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=DEVICE)
-    print(tokens)
-
-    eos_reached = torch.tensor([False] * batch_size, device=DEVICE)
-    prompt_tokens_mask = tokens != pad_id  # True if the token is a prompt token, False otherwise
-    cur_iterator = tqdm(range(1, total_len), desc="Generating tokens")
-    temperature = 0.6
-    top_p = 0.9
-    for cur_pos in cur_iterator:
-        with torch.no_grad():
-            logits = torch.randn(batch_size, 1, VOCAB_SIZE)
-
-        if temperature > 0:
-            probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
-            next_token = sample_top_p(probs, top_p)
-        else:
-            next_token = torch.argmax(logits[:, -1], dim=-1)
-        # shape: (batch_size)
-        next_token = next_token.reshape(-1)
-        # !!!!!! Only replace token if it is a padding token
-        next_token = torch.where(prompt_tokens_mask[:, cur_pos], tokens[:, cur_pos], next_token)
-        tokens[:, cur_pos] = next_token
-        # EOS is reached only if we found an EOS token for a padding position
-        eos_reached |= (~prompt_tokens_mask[:, cur_pos]) & (next_token == tokenizer.eos_id)
-        if all(eos_reached):
-            break
-
-    out_tokens = []
-    out_text = []
-    for prompt_index, current_prompt_tokens in enumerate(tokens.tolist()):
-        # Cut to the EOS token, if present
-        if tokenizer.eos_id in current_prompt_tokens:
-            eos_idx = current_prompt_tokens.index(tokenizer.eos_id)
-            current_prompt_tokens = current_prompt_tokens[:eos_idx]
-        out_tokens.append(current_prompt_tokens)
-        out_text.append(tokenizer.decode(current_prompt_tokens))
-    print(out_text)
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ model = LlamaForCompletion.build(
     device=device
 )
 
-out_tokens, out_texts = (model(prompts, max_gen_len=64))
+out_tokens, out_texts = (model.completion(prompts, max_gen_len=64))
 assert len(out_texts) == len(prompts)
 for i in range(len(out_texts)):
     print(f'{out_texts[i]}')

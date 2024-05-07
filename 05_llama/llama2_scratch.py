@@ -279,7 +279,8 @@ class LlamaModel(nn.Module):
         return output
 
 
-class LlamaForCompletion(nn.Module):
+# 修改一下代码组织方式
+class LlamaForCompletion():
     def __init__(self, model: LlamaModel, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
         super().__init__()
         self.model = model
@@ -321,10 +322,10 @@ class LlamaForCompletion(nn.Module):
 
         return LlamaForCompletion(model, tokenizer, model_args)
 
-    def forward(self, prompts: list[str],
-                temperature: float = 0.6,
-                top_p: float = 0.9,
-                max_gen_len: Optional[int] = None):
+    def completion(self, prompts: list[str],
+                   temperature: float = 0.6,
+                   top_p: float = 0.9,
+                   max_gen_len: Optional[int] = None):
         if max_gen_len is None:
             max_gen_len = self.args.max_seq_len - 1
         # Convert each prompt into tokens
