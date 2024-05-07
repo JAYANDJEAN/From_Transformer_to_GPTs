@@ -1,4 +1,4 @@
-model_name: scratch
+model_name: torch
 model_version: v1
 batch_size: 128
 num_epochs: 1

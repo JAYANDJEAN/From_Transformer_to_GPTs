@@ -89,14 +89,15 @@ def check_kv_cache():
         max_seq_len=max_seq_len,
         device=DEVICE
     )
-    # 测试1.每次读一个token，2.一次性读入所有token，这两种方法的差异，这两种方法应该返回同样的结果！
+    # 1.每次读一个token，2.一次性读入所有token，这两种方法应该返回同样的结果！
     # 因为模型里的参数存在随机过程，所以通过复制，保持这部分参数相同。
     attention1 = Attention(model_args)
     attention2 = Attention(model_args)
     attention2.load_state_dict(attention1.state_dict())
 
     x = torch.randn(batch_size, seq_len, dim)
-    # 可以观察到两种方法的结果是完全一样的，一次性读入token，必须加上mask，不然就存在当前token可观察后面token的情况。
+    # 可以观察到两种方法的结果是完全一样的，
+    # 一次性读入token，必须加上mask，不然就存在当前token可观察后面token的情况。
     print('Method_1:')
     for i in range(seq_len):
         t = x[:, i, :].unsqueeze(1)
@@ -125,10 +126,28 @@ def check_kv_cache():
 
 
 def check_feed_forward():
+    # todo
     pass
 
 
-def check_transformer():
+def check_tokenizer():
+    tokenizer = SentencePieceProcessor()
+    tokenizer.load('/Users/fengyuan/Documents/models/Llama-2-7b/tokenizer.model')
+
+    print('==========================tokenizer==========================')
+    # 中文支持的不好把，“气”都没有。
+    prompt = "今天是个好天气！"
+    print(tokenizer.encode(prompt))
+    print([tokenizer.decode(i) for i in
+           [29871, 31482, 30408, 30392, 30502, 31076, 30408, 233, 179, 151, 30584]])
+    token_ids = [1, 4103, 9632, 4223, 304, 5176, 29901, 13, 13, 344, 29874, 4932, 357, 1149, 301, 449, 276, 316, 2778,
+                 13, 412, 407, 837, 524, 1149, 6042, 354, 772, 440, 29878, 1318, 13, 572, 1878, 330, 3055, 1725, 1149,
+                 330, 3055, 1725, 4639, 28754, 13, 1173, 968, 1149]
+    print(tokenizer.decode(token_ids))
+    print([tokenizer.decode(i) for i in token_ids])
+
+
+def check_model_and_loss():
     model_args: ModelArgs = ModelArgs(
         max_seq_len=MAX_SEQ_LEN,
         max_batch_size=MAX_BATCH_SIZE,
@@ -140,34 +159,15 @@ def check_transformer():
         norm_eps=1e-5,
         device=DEVICE
     )
-
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-1)
     model = LlamaModel(model_args).to(DEVICE)
-    tokens = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.int)
+    tokens = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.long)
     summary(model, tokens, 0, show_input=True)
     output = model(tokens, 0)
+
     assert output.shape == (BATCH_SIZE, SEQ_LEN, VOCAB_SIZE)
-
-
-def check_train():
-    pass
-
-
-def check_tokenizer():
-    tokenizer = SentencePieceProcessor()
-    with open('../00_assets/prompts.json', 'r') as file:
-        data = json.load(file)
-    prompts = data['prompts']
-    max_gen_len = MAX_SEQ_LEN - 1
-    tokenizer.load('/Users/yuan.feng/Downloads/tokenizer.model')
-
-    print('==========================tokenizer==========================')
-    prompt_tokens = [tokenizer.encode(prompt, out_type=int, add_bos=True, add_eos=False)
-                     for prompt in prompts]
-    token_ids = [1, 4103, 9632, 4223, 304, 5176, 29901, 13, 13, 344, 29874, 4932, 357, 1149, 301, 449, 276, 316, 2778,
-                 13, 412, 407, 837, 524, 1149, 6042, 354, 772, 440, 29878, 1318, 13, 572, 1878, 330, 3055, 1725, 1149,
-                 330, 3055, 1725, 4639, 28754, 13, 1173, 968, 1149]
-    print(tokenizer.decode(token_ids))
-    print([tokenizer.decode(i) for i in token_ids])
+    loss = loss_fn(output.reshape(-1, output.shape[-1]), tokens.reshape(-1))
+    print(loss)
 
 
 if __name__ == '__main__':
@@ -183,9 +183,10 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    # check_rope()
-    # check_rms_norm()
-    # check_silu()
-    # check_transformer()
-    # check_tokenizer()
+    check_rope()
+    check_rms_norm()
+    check_silu()
     check_kv_cache()
+    check_feed_forward()
+    check_tokenizer()
+    check_model_and_loss()

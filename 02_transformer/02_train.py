@@ -14,7 +14,12 @@ elif torch.backends.mps.is_available():
 else:
     device = 'cpu'
 DEVICE = torch.device(device)
+print(device)
 
+
+# TransformerScratch 可在三种设备上跑
+# TransformerTorch 不能在mps设备上跑，
+# The operator 'aten::_nested_tensor_from_mask_left_aligned' is not currently implemented for the MPS device.
 
 def train_and_translate(parameters):
     def _epoch(model, dataloader, tp):
@@ -104,7 +109,7 @@ def train_and_translate(parameters):
     print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
-with open('../00_assets/scratch_v1.yml', 'r') as file:
+with open('../00_assets/translation.yml', 'r') as file:
     config = yaml.safe_load(file)
 
 train_and_translate(config)

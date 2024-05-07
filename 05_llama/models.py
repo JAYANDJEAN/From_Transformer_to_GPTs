@@ -200,6 +200,8 @@ class FeedForward(nn.Module):
         self.w3 = nn.Linear(args.dim, hidden_dim, bias=False)
 
     def forward(self, x: Tensor):
+        # todo
+        # 为什么设计成这样，挺复杂的。
         # (batch_size, seq_len, dim) -> (batch_size, seq_len, hidden_dim)
         swish = F.silu(self.w1(x))
         # (batch_size, seq_len, dim) -> (batch_size, seq_len, hidden_dim)
