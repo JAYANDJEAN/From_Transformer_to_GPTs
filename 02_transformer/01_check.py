@@ -48,7 +48,7 @@ def check_positional_encoding():
         plt.colorbar()
 
     plt.tight_layout()
-    plt.savefig('PE.png')
+    plt.savefig('../00_assets/PE.png')
 
 
 def check_scale_dot_product_attention():
@@ -250,3 +250,10 @@ if __name__ == '__main__':
     TGT_SEQ_LEN = 17
 
     check_positional_encoding()
+    check_scale_dot_product_attention()
+    check_multi_head_attention()
+    check_encoder_layer()
+    check_decoder_layer()
+    check_transformer()
+    check_data()
+    check_translate()

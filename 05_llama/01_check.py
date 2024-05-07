@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from llama2_scratch import *
+from models import *
 from torch import Tensor
 import torch
 import json
@@ -73,6 +73,57 @@ def check_silu():
     plt.savefig('../00_assets/SiLU.png')
 
 
+def check_kv_cache():
+    dim = 4
+    n_heads = 1
+    max_seq_len = 10
+    max_batch_size = 8
+    seq_len = 3
+    batch_size = 2
+    show_cache = True
+    freqs_complex = precompute_theta_pos_frequencies(dim, seq_len, DEVICE)
+    model_args: ModelArgs = ModelArgs(
+        n_heads=n_heads,
+        dim=dim,
+        max_batch_size=max_batch_size,
+        max_seq_len=max_seq_len,
+        device=DEVICE
+    )
+    # 测试1.每次读一个token，2.一次性读入所有token，这两种方法的差异，这两种方法应该返回同样的结果！
+    # 因为模型里的参数存在随机过程，所以通过复制，保持这部分参数相同。
+    attention1 = Attention(model_args)
+    attention2 = Attention(model_args)
+    attention2.load_state_dict(attention1.state_dict())
+
+    x = torch.randn(batch_size, seq_len, dim)
+    # 可以观察到两种方法的结果是完全一样的，一次性读入token，必须加上mask，不然就存在当前token可观察后面token的情况。
+    print('Method_1:')
+    for i in range(seq_len):
+        t = x[:, i, :].unsqueeze(1)
+        f = freqs_complex[i:i + 1]
+        output1 = attention1(t, i, f, None)
+        print('-' * 30)
+        if show_cache:
+            print('cache_k_1:')
+            print(attention1.cache_k[:batch_size, :i + 1].squeeze())
+        else:
+            print('output_1:')
+            print(output1.squeeze())
+
+    print('=' * 70)
+    print('Method_2:')
+    mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"),
+                                 device=DEVICE),
+                      diagonal=1)
+    output2 = attention2(x, 0, freqs_complex, mask)
+    if show_cache:
+        print('cache_k_2:')
+        print(attention2.cache_k[:batch_size, :seq_len].squeeze())
+    else:
+        print('output_2:')
+        print(output2.squeeze())
+
+
 def check_transformer():
     model_args: ModelArgs = ModelArgs(
         max_seq_len=MAX_SEQ_LEN,
@@ -87,10 +138,10 @@ def check_transformer():
     )
 
     model = LlamaModel(model_args).to(DEVICE)
-    tokens = torch.randint(low=0, high=100, size=(BATCH_SIZE, 1), dtype=torch.int)
-    summary(model, tokens, 1, show_input=True)
-    output = model(tokens, 1)
-    assert output.shape == (BATCH_SIZE, 1, VOCAB_SIZE)
+    tokens = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.int)
+    summary(model, tokens, 0, show_input=True)
+    output = model(tokens, 0)
+    assert output.shape == (BATCH_SIZE, SEQ_LEN, VOCAB_SIZE)
 
 
 def check_train():
@@ -117,9 +168,9 @@ def check_tokenizer():
 
 if __name__ == '__main__':
     VOCAB_SIZE = 32000
-    SEQ_LEN = 1
+    SEQ_LEN = 23
     MAX_SEQ_LEN = 2048
-    BATCH_SIZE = 16
+    BATCH_SIZE = 6
     MAX_BATCH_SIZE = 32
     MAX_LEN = 100
     D_MODEL = 512
@@ -128,4 +179,9 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    check_rope()
+    # check_rope()
+    # check_rms_norm()
+    # check_silu()
+    # check_transformer()
+    # check_tokenizer()
+    check_kv_cache()

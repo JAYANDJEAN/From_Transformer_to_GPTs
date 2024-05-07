@@ -13,6 +13,7 @@ from torch import Tensor
 from sentencepiece import SentencePieceProcessor
 
 '''
+LLaMa-2
 https://github.com/meta-llama/llama/
 https://github.com/hkproj/pytorch-llama
 '''
@@ -169,7 +170,7 @@ class Attention(nn.Module):
         # -> (batch_size, n_head_q, seq_len, seq_len_kv)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
-            scores += mask  # (batch_size, n_head_q, seq_len, seq_len_kv)
+            scores = scores + mask  # (batch_size, n_head_q, seq_len, seq_len_kv)
         # -> (batch_size, n_head_q, seq_len, seq_len_kv)
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
 
@@ -280,9 +281,8 @@ class LlamaModel(nn.Module):
 
 
 # 修改一下代码组织方式
-class LlamaForCompletion():
+class LlamaForCompletion:
     def __init__(self, model: LlamaModel, tokenizer: SentencePieceProcessor, model_args: ModelArgs):
-        super().__init__()
         self.model = model
         self.tokenizer = tokenizer
         self.args = model_args

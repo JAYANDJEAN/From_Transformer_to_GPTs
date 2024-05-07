@@ -7,7 +7,7 @@ from tokenizers.trainers import BpeTrainer
 tokenizer = Tokenizer(BPE())
 tokenizer.pre_tokenizer = Whitespace()
 trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
-tokenizer.train(files=["../00_data/train.de", "../00_data/train.en"], trainer=trainer)
+tokenizer.train(files=["../00_assets/train.de", "../00_assets/train.en"], trainer=trainer)
 
 corpus = [
     "Ein Mann in grün hält eine Gitarre, während der andere Mann sein Hemd ansieht.",

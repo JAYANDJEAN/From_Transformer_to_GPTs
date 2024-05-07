@@ -1,4 +1,5 @@
-from llama2_scratch import LlamaForCompletion
+from models import LlamaForCompletion
+from transformers import AutoTokenizer, LlamaForCausalLM
 import torch
 import json
 
@@ -25,3 +26,13 @@ assert len(out_texts) == len(prompts)
 for i in range(len(out_texts)):
     print(f'{out_texts[i]}')
     print('-' * 50)
+
+# model = LlamaForCausalLM.from_pretrained(model_path + "Llama-2-7b-hf")
+# tokenizer = AutoTokenizer.from_pretrained(model_path + "Llama-2-7b-hf")
+
+# prompt = "Simply put, the theory of relativity states that "
+# inputs = tokenizer(prompt, return_tensors="pt")
+#
+# # Generate
+# generate_ids = model.generate(inputs.input_ids, max_length=1024)
+# print(tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0])

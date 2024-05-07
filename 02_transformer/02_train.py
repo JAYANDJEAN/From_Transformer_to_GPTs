@@ -18,7 +18,6 @@ DEVICE = torch.device(device)
 
 def train_and_translate(parameters):
     def _epoch(model, dataloader, tp):
-
         if tp == 'train':
             model.train()
         elif tp == 'eval':
@@ -82,7 +81,7 @@ def train_and_translate(parameters):
         transformer = None
 
     min_train_loss = float('inf')
-    model_path = 'best_model_' + parameters['model_name'] + '_' + parameters['model_version'] + '.pth'
+    model_path = '../00_assets/best_model_' + parameters['model_name'] + '_' + parameters['model_version'] + '.pth'
 
     for epoch in range(1, parameters['num_epochs'] + 1):
         start_time = timer()
