@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 import torch
 import os
 import yaml
+from modelsummary import summary
 
 '''
 https://github.com/DLLXW/baby-llama2-chinese
@@ -41,7 +42,7 @@ class PretrainDataset(Dataset):
 def process_wiki_clean():
     # download data: https://huggingface.co/datasets/pleisto/wikipedia-cn-20230720-filtered
     token = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
-    with open('../00_assets/wikipedia-cn-20230720-filtered.json', 'r', encoding='utf-8') as f:
+    with open('/Users/fengyuan/Downloads/wikipedia-cn-20230720-filtered.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     doc_ids = []
     for line in tqdm(data):
@@ -75,7 +76,8 @@ def train_epoch(model, dataloader, tp):
         if tp == 'train':
             optimizer.zero_grad()
             loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt.reshape(-1))
-            loss.backward()
+            print(loss.item())
+            loss.backward(retain_graph=True)
             optimizer.step()
             losses += loss.item()
         elif tp == 'eval':
@@ -87,6 +89,9 @@ def train_epoch(model, dataloader, tp):
 
 
 if __name__ == "__main__":
+    # process_wiki_clean()
+    torch.autograd.set_detect_anomaly(True)
+
     with open('../00_assets/tiny_chinese_llama.yml', 'r') as file:
         config = yaml.safe_load(file)
     train_ds = PretrainDataset(['../00_assets/wiki.bin'], max_length=config['max_seq_len'])
@@ -135,10 +140,19 @@ if __name__ == "__main__":
     else:
         model = None
 
+    # tokens = torch.randint(low=0, high=100, size=(32, 12), dtype=torch.long)
+    # summary(model, tokens, 0, show_input=True)
     min_train_loss = float('inf')
     save_dir = os.path.join(config['out_dir'], 'pretrain')
-    if not os.path.exists(save_dir): os.makedirs(save_dir)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
+    # _, (src, tgt) = next(enumerate(train_loader))
+    # src = src.to(config['device'])
+    # tgt = tgt.to(config['device'])
+    # tgt_predict = model(src, 0)
+    # print(tgt_predict.shape)
+    model = model.to(config['device'])
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
         with tqdm(total=len(list(train_loader)), desc=f'Epoch {epoch}', unit='batch') as pbar:
