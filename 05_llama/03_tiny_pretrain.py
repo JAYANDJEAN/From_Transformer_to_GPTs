@@ -76,8 +76,7 @@ def train_epoch(model, dataloader, tp):
         if tp == 'train':
             optimizer.zero_grad()
             loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt.reshape(-1))
-            print(loss.item())
-            loss.backward(retain_graph=True)
+            loss.backward()
             optimizer.step()
             losses += loss.item()
         elif tp == 'eval':
@@ -90,6 +89,7 @@ def train_epoch(model, dataloader, tp):
 
 if __name__ == "__main__":
     # process_wiki_clean()
+    # 模型训练不能用kv_cache，因为...
     torch.autograd.set_detect_anomaly(True)
 
     with open('../00_assets/tiny_chinese_llama.yml', 'r') as file:
@@ -107,6 +107,7 @@ if __name__ == "__main__":
             vocab_size=config['vocab_size'],
             multiple_of=config['multiple_of'],
             max_seq_len=config['max_seq_len'],
+            kv_cache=False,
             device=config['device']
         )
         model = LlamaModel(model_args)
@@ -124,6 +125,7 @@ if __name__ == "__main__":
             vocab_size=checkpoint_model_args['vocab_size'],
             multiple_of=checkpoint_model_args['multiple_of'],
             max_seq_len=checkpoint_model_args['max_seq_len'],
+            kv_cache=False,
             device=config['device']
         )
         model = LlamaModel(model_args)

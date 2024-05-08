@@ -32,6 +32,7 @@ class ModelArgs:
     max_batch_size: int = 32
     max_seq_len: int = 2048
     device: str = None
+    kv_cache: bool = True  # use kv_cache or not
 
 
 def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
@@ -128,10 +129,13 @@ class Attention(nn.Module):
         # Linear transformation for output.
         self.wo = nn.Linear(args.n_heads * self.head_dim, args.dim, bias=False)
 
+        self.kv_cache = args.kv_cache
         self.cache_k = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
         self.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
 
-    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor]):
+    def forward(self, x: Tensor, start_pos: int,
+                freqs_complex: Tensor,
+                mask: Optional[Tensor]):
         # x: (batch_size, seq_len, dim)
         batch_size, seq_len, _ = x.shape
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
@@ -145,31 +149,31 @@ class Attention(nn.Module):
         # -> (batch_size, seq_len, n_head_kv, head_dim)
         xk = apply_rotary_embeddings(xk, freqs_complex, self.device)
 
-        # 保存
-        self.cache_k[:batch_size, start_pos: start_pos + seq_len] = xk
-        self.cache_v[:batch_size, start_pos: start_pos + seq_len] = xv
-
-        # -> (batch_size, seq_len_kv, n_head_kv, head_dim)
-        # ！！！这里是关键，也就是计算当前token，是拿到了之前的token
-        # https://github.com/meta-llama/llama/issues/151
-        keys = self.cache_k[:batch_size, 0: start_pos + seq_len]
-        values = self.cache_v[:batch_size, 0: start_pos + seq_len]
+        if self.kv_cache:
+            # 保存
+            self.cache_k[:batch_size, start_pos: start_pos + seq_len] = xk
+            self.cache_v[:batch_size, start_pos: start_pos + seq_len] = xv
+            # -> (batch_size, seq_len_kv, n_head_kv, head_dim)
+            # ！！！这里是关键，也就是计算当前token，是拿到了之前的token
+            # https://github.com/meta-llama/llama/issues/151
+            xk = self.cache_k[:batch_size, 0: start_pos + seq_len]
+            xv = self.cache_v[:batch_size, 0: start_pos + seq_len]
 
         # (batch_size, seq_len_kv, n_head_q, head_dim)
         # 因为 self.n_rep = self.n_heads_q // self.n_kv_heads
-        keys = repeat_kv(keys, self.n_rep)
-        values = repeat_kv(values, self.n_rep)
+        xk = repeat_kv(xk, self.n_rep)
+        xv = repeat_kv(xv, self.n_rep)
 
         # -> (batch_size, n_head_q, seq_len, head_dim)
         xq = xq.transpose(1, 2)
         # -> (batch_size, n_head_q, seq_len_kv, head_dim)
-        keys = keys.transpose(1, 2)
+        xk = xk.transpose(1, 2)
         # -> (batch_size, n_head_q, seq_len_kv, head_dim)
-        values = values.transpose(1, 2)
+        xv = xv.transpose(1, 2)
 
         # (batch_size, n_head_q, seq_len, head_dim) @ (batch_size, n_head_q, head_dim, seq_len_kv)
         # -> (batch_size, n_head_q, seq_len, seq_len_kv)
-        scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
+        scores = torch.matmul(xq, xk.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
             scores = scores + mask  # (batch_size, n_head_q, seq_len, seq_len_kv)
         # -> (batch_size, n_head_q, seq_len, seq_len_kv)
@@ -177,7 +181,7 @@ class Attention(nn.Module):
 
         # (batch_size, n_head_q, seq_len, seq_len_kv) @ (batch_size, n_head_q, seq_len_kv, head_dim)
         # -> (batch_size, n_head_q, seq_len, head_dim)
-        output = torch.matmul(scores, values)
+        output = torch.matmul(scores, xv)
         # (batch_size, n_head_q, seq_len, head_dim) -> (batch_size, seq_len, n_head_q, head_dim)
         # -> (batch_size, seq_len, dim)
         output = (output.transpose(1, 2).contiguous().view(batch_size, seq_len, -1))
@@ -231,7 +235,7 @@ class DecoderBlock(nn.Module):
         # Normalization BEFORE the feed forward block
         self.ffn_norm = RMSNorm(args.dim, eps=args.norm_eps)
 
-    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor], ):
+    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor]):
         # (batch_size, seq_len, dim) + (batch_size, seq_len, dim) -> (batch_size, seq_len, dim)
         h = x + self.attention(self.attention_norm(x), start_pos, freqs_complex, mask)
         # (batch_size, seq_len, dim) + (batch_size, seq_len, dim) -> (batch_size, seq_len, dim)
