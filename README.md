@@ -28,7 +28,9 @@
 ### 5、LLaMa
 
 1. 参考meta-llama代码，实现一个非分布式llama2，并单机跑推理代码。
-2. fine-tune llama2
+2. 下载中文数据，训练一个tiny版本的llama-chinese，优化参数很随意，主要是让流程跑起来。
+2. fine-tune 训练好的tiny-llama-chinese
 3. 参考：
    1. https://github.com/hkproj/pytorch-llama
    2. https://github.com/meta-llama/llama
+   3. https://github.com/DLLXW/baby-llama2-chinese
