@@ -1,0 +1,19 @@
+out_dir: '../00_assets'
+num_epochs: 1
+init_from: 'scratch'
+batch_size: 32
+# model 根据需要更改
+vocab_size: 64793
+max_seq_len: 512
+dim: 512
+n_layers: 4
+n_heads: 8
+multiple_of: 32
+dropout: 0.0  # for pretraining 0 is good, for fine tuning try 0.1+
+# adamw optimizer
+lr: 0.0003  # max learning rate
+beta1: 0.9
+beta2: 0.98
+# system
+device: 'cpu'  # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
+dtype: 'float16'  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
