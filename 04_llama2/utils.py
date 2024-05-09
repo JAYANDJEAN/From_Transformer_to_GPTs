@@ -30,17 +30,16 @@ def init_model(config):
     elif config['init_from'] == "resume":
         print(f"Resuming training from {config['out_dir']}")
         # resume training from a checkpoint.
-        ckpt_path = os.path.join(config['out_dir'], "ckpt.pt")
-        checkpoint = torch.load(ckpt_path, map_location=config['device'])
-        checkpoint_model_args = checkpoint["model_args"]
+        ckpt_path = os.path.join(config['out_dir'], "pretrain/best.pt")
+        checkpoint = torch.load(ckpt_path)
         model_args: ModelArgs = ModelArgs(
-            dim=checkpoint_model_args['dim'],
-            n_layers=checkpoint_model_args['n_layers'],
-            n_heads=checkpoint_model_args['n_heads'],
-            n_kv_heads=checkpoint_model_args['n_heads'],
-            vocab_size=checkpoint_model_args['vocab_size'],
-            multiple_of=checkpoint_model_args['multiple_of'],
-            max_seq_len=checkpoint_model_args['max_seq_len'],
+            dim=config['dim'],
+            n_layers=config['n_layers'],
+            n_heads=config['n_heads'],
+            n_kv_heads=config['n_heads'],
+            vocab_size=config['vocab_size'],
+            multiple_of=config['multiple_of'],
+            max_seq_len=config['max_seq_len'],
             kv_cache=False,
             device=config['device']
         )
