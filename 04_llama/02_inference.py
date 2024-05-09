@@ -43,7 +43,7 @@ elif model_type == 'tiny':
         max_seq_len=256,
         device=device
     )
-    sentence = ["黄大仙文化公园（Wong Tai Sin Culture Park）是香港一个公园，位于九龙黄大仙摩士公园"]
+    sentence = ["今天天气不错啊！"]
     # ，门牌编号为香港黄大仙区竹园大成街8号，为一个公园中的公园，入口设于东头村道及大成街。
     out_tokens, out_texts = (model.completion(sentence, max_gen_len=64))
     assert len(out_texts) == len(sentence)
