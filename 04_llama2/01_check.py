@@ -4,6 +4,7 @@ from torch import Tensor
 import torch
 from modelsummary import summary
 from sentencepiece import SentencePieceProcessor
+from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 import yaml
 
 
@@ -49,7 +50,7 @@ def check_rope():
         plt.colorbar()
 
     plt.tight_layout()
-    plt.savefig('../00_assets/PE and RoPE.png')
+    plt.savefig('../00_assets/image/PE and RoPE.png')
 
 
 def check_rms_norm():
@@ -71,7 +72,7 @@ def check_silu():
     plt.title('SiLU Function')
     plt.grid(True)
     plt.legend()
-    plt.savefig('../00_assets/SiLU.png')
+    plt.savefig('../00_assets/image/SiLU.png')
 
 
 def check_kv_cache():
@@ -133,7 +134,7 @@ def check_feed_forward():
 
 def check_tokenizer():
     tokenizer = SentencePieceProcessor()
-    with open('../00_assets/local_settings.yml', 'r') as file:
+    with open('../00_assets/yml/local_settings.yml', 'r') as file:
         config = yaml.safe_load(file)
     tokenizer.load(config['model_path'] + 'Llama-2-7b/tokenizer.model')
 
@@ -148,6 +149,17 @@ def check_tokenizer():
                  330, 3055, 1725, 4639, 28754, 13, 1173, 968, 1149]
     print(tokenizer.decode(token_ids))
     print([tokenizer.decode(i) for i in token_ids])
+
+
+def check_glm_tokenizer():
+    tokenizer_path = './chatglm_tokenizer/tokenizer.model'
+    tokenizer = ChatGLMTokenizer(vocab_file=tokenizer_path)
+    print(tokenizer.pad_token_id)
+    print(tokenizer.bos_token_id)
+    print(tokenizer.eos_token_id)
+    print(tokenizer.special_tokens['<bos>'])
+    print(tokenizer.special_tokens['<eos>'])
+    print(tokenizer.special_tokens['<pad>'])
 
 
 def check_model_and_loss():
@@ -193,4 +205,4 @@ if __name__ == '__main__':
     # check_feed_forward()
     # check_tokenizer()
     # check_model_and_loss()
-    check_kv_cache()
+    check_glm_tokenizer()

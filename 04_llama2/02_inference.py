@@ -4,11 +4,11 @@ import torch
 import json
 import yaml
 
-with open('../00_assets/prompts.json', 'r') as file:
+with open('../00_assets/json/prompts.json', 'r') as file:
     data = json.load(file)
 prompts = data['prompts']
 torch.manual_seed(0)
-with open('../00_assets/local_settings.yml', 'r') as file:
+with open('../00_assets/yml/local_settings.yml', 'r') as file:
     config = yaml.safe_load(file)
 device = "cpu"  # 目前m3 max上的cpu可跑，还未测试cuda，mps报错，未细看
 model_type = '7b'  # '7b', 'hf'

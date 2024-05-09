@@ -1,95 +1,55 @@
-import os
-import json
-
 import pandas as pd
+
+from torch.utils.data import Dataset
+
+import json
 import numpy as np
+from tqdm import tqdm
+from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
+from timeit import default_timer as timer
+from utils import init_model
+
 from torch.utils.data import Dataset
 import torch
-from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
+import os
+import yaml
 
 
 # Instruction Tuning
-# https://github.com/DLLXW/baby-llama2-chinese/tree/main
-
-# https://huggingface.co/datasets/shibing624/alpaca-zh
-
-def sft_process():
-    with open('./sft_data/alpaca_gpt4_data_zh.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    #
-    q_lst = []
-    a_lst = []
-    for per in data:
-        q = per['instruction']
-        i = per['input']
-        a = per['output']
-        q = q + i
-        if len(q) < 10 or len(a) < 5:
-            continue
-        if len(q) > 256 or len(a) > 256:
-            continue
-        q_lst.append(q)
-        a_lst.append(a)
-
-    f = open('./sft_data/Belle_open_source_1M.json', 'r', encoding='utf-8')
-
-    # s
-    while True:
-        line = f.readline()
-        if not line:
-            break
-        per = json.loads(line)
-        q = per['instruction']
-        i = per['input']
-        a = per['output']
-        q = q + i
-        if len(q) < 10 or len(a) < 5:
-            continue
-        if len(q) > 256 or len(a) > 256:
-            continue
-        q_lst.append(q)
-        a_lst.append(a)
-    df = pd.DataFrame(columns=['prompt', 'answer'])
-    df['prompt'] = q_lst
-    df['answer'] = a_lst
-    df.to_csv('sft_data/sft_data.csv', index=False)
-    print(df)
 
 
-save_dir = './sft_data'
-if not os.path.exists(save_dir): os.makedirs(save_dir)
-sft_process()
-
-
-class SFTDataset(Dataset):
-    def __init__(self, df, tokenizer
+class InstructionDataset(Dataset):
+    def __init__(self, dp, tokenizer
                  , max_length=256
                  , prompt_max_len=128
                  , answer_max_len=128):
         super().__init__()
-        self.df = df
+        # download data: https://huggingface.co/datasets/shibing624/alpaca-zh
+        with open(dp, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        df = pd.DataFrame(data)
+        self.df = df.loc[(df['instruction'].str.len() >= 10) & (df['instruction'].str.len() <= 256) &
+                         (df['output'].str.len() >= 5) & (df['output'].str.len() <= 256), ['instruction', 'output']]
         self.max_length = max_length
         self.prompt_max_len = prompt_max_len
         self.answer_max_len = answer_max_len
-        #
         self.tokenizer = tokenizer
-        self.bos = self.tokenizer.special_tokens['<bos>']
-        self.eos = self.tokenizer.special_tokens['<eos>']
-        self.pad = 0  # self.tokenizer.special_tokens['<pad>']
+        self.bos = self.tokenizer.special_tokens['<bos>']  # 1
+        self.eos = self.tokenizer.special_tokens['<eos>']  # 2
+        self.pad = self.tokenizer.special_tokens['<pad>']  # 0
 
     def __len__(self):
         return self.df.shape[0]
 
     def __getitem__(self, index: int):
-        #
         sample = self.df.iloc[index]
-        prompt = self.tokenizer.encode(sample['prompt'], add_special_tokens=False)
-        answer = self.tokenizer.encode(sample['answer'], add_special_tokens=False)
+        prompt = self.tokenizer.encode(sample['instruction'], add_special_tokens=False)
+        answer = self.tokenizer.encode(sample['output'], add_special_tokens=False)
         if len(prompt) > self.prompt_max_len:
             prompt = prompt[:self.prompt_max_len - 2]
         if len(answer) > self.answer_max_len:
             answer = answer[:self.answer_max_len - 2]
-        #
+
         input_id = prompt + [self.bos] + answer + [self.eos]
         context_length = input_id.index(self.bos)
         mask_position = context_length - 1
@@ -99,20 +59,49 @@ class SFTDataset(Dataset):
             loss_mask = [0] * context_length + [1] * (len(input_id[mask_position + 1:])) + [0] * pad_len
         else:
             loss_mask = [0] * context_length + [1] * (len(input_id[mask_position + 1:-pad_len])) + [0] * pad_len
-        #
         input_id = np.array(input_id)
-        X = np.array(input_id[:-1]).astype(np.int64)
-        Y = np.array(input_id[1:]).astype(np.int64)
+        src = np.array(input_id[:-1]).astype(np.int64)
+        tgt = np.array(input_id[1:]).astype(np.int64)
         loss_mask = np.array(loss_mask[:-1])
-        #
-        return torch.from_numpy(X), torch.from_numpy(Y), torch.from_numpy(loss_mask)
+
+        return torch.from_numpy(src), torch.from_numpy(tgt), torch.from_numpy(loss_mask)
 
 
-#
+def train_epoch(model, dataloader):
+    model.train()
+    losses = 0
+    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'],
+                                 betas=(config['beta1'], config['beta2']))
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)
+
+    for i, (src, tgt, loss_mask) in enumerate(dataloader):
+        src = src.to(config['device'])
+        tgt = tgt.to(config['device'])
+        loss_mask = loss_mask.to(config['device'])
+        tgt_predict = model(src, 0)
+
+        optimizer.zero_grad()
+        loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt.reshape(-1))
+        loss_mask = loss_mask.view(-1)
+        loss = torch.sum(loss * loss_mask) / loss_mask.sum()
+        loss.backward()
+        optimizer.step()
+        losses += loss.item()
+        pbar.update(1)
+
+    return losses / len(list(dataloader))
+
+
 if __name__ == "__main__":
-    df = pd.read_csv('./data/sft_data.csv')
+    with open('../00_assets/yml/tiny_chinese_llama.yml', 'r') as file:
+        config = yaml.safe_load(file)
+    config['init_from'] = 'resume'
+    with open('../00_assets/yml/local_settings.yml', 'r') as file:
+        setting = yaml.safe_load(file)
+    datapath = setting['model_path'] + 'alpaca_gpt4_data_zh.json'
+
     tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
-    train_ds = SFTDataset(df, tokenizer, max_length=256)
+    train_ds = InstructionDataset(datapath, tokenizer, max_length=256)
     train_loader = torch.utils.data.DataLoader(
         train_ds,
         batch_size=1,
@@ -121,9 +110,22 @@ if __name__ == "__main__":
         shuffle=False,
         num_workers=0,
     )
-    for i, (X, Y, loss_mask) in enumerate(train_loader):
-        print(X.shape, Y.shape)
-        print(X[0])
-        print(Y[0])
-        print(loss_mask[0])
-        break
+
+    llama_model = init_model(config)
+
+    print("Total trainable parameters:", sum(p.numel() for p in llama_model.parameters() if p.requires_grad))
+    min_train_loss = float('inf')
+    save_dir = os.path.join(config['out_dir'], 'pretrain')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    for epoch in range(1, config['num_epochs'] + 1):
+        start_time = timer()
+        with tqdm(total=len(list(train_loader)), desc=f'Epoch {epoch}', unit='batch') as pbar:
+            train_loss = train_epoch(llama_model, train_loader)
+            if train_loss < min_train_loss:
+                min_train_loss = train_loss
+                torch.save(llama_model.state_dict(), '{}/best.pth'.format(save_dir))
+            end_time = timer()
+            print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
+                   f"Epoch time = {(end_time - start_time):.3f}s"))
