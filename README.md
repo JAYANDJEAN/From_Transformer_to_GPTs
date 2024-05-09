@@ -5,12 +5,12 @@
 1. 了解多种LLM的tokenizer
 2. 利用`tokenizers`训练一个BPE
 3. 从头训练一个BPE
-4. 参考：![img.png](img.png)
+4. 参考：
    1. https://www.huaxiaozhuan.com/%E5%B7%A5%E5%85%B7/huggingface_transformer/chapters/1_tokenizer.html
 
 ### 2、Transformer
 
-1. 用PyTorch从头实现Transformer：`TransformerScratch`
+1. 用PyTorch从头实现Transformer
 2. 针对德语到英语的翻译任务，用PyTorch自带的Transformer和手写的Transformer分别跑训练过程，并翻译具体句子。
 3. 参考：
    1. https://github.com/hyunwoongko/transformer 
