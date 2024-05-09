@@ -18,14 +18,16 @@
 
 ### 3、T5
 
-1. 了解encoder-decoder架构的T5，并尝试fine-tune。
+1. 了解encoder-decoder架构的T5，并fine-tune。
 
 ### 4、LLaMa
 
-1. 参考meta-llama代码，实现一个单机式llama2，并单机跑推理代码。
-2. 下载中文数据，训练一个tiny版本的llama-chinese，优化参数很随意，主要是让流程跑起来。
-2. fine-tune 训练好的tiny-llama-chinese
-3. 参考：
+1. 参考meta-llama代码，实现一个单机版本的llama2。
+2. 下载中文数据，训练一个tiny版本的llama-chinese，优化器设置很随意，主要是让流程跑起来。
+3. 指令微调训练好的tiny-llama-chinese
+4. 跑通三种推理方式，下载的7b，hf的封装，训练的tiny。
+5. RLHF
+6. 参考：
    1. https://github.com/hkproj/pytorch-llama
    2. https://github.com/meta-llama/llama
    3. https://github.com/DLLXW/baby-llama2-chinese
@@ -35,3 +37,7 @@
 1. 了解一下。未修改代码。
 2. 参考：
    1. https://github.com/meta-llama/codellama/tree/main
+
+### 6、分布式训练
+
+1. 上面代码都是单机版本，现在需要学习一下分布式。
