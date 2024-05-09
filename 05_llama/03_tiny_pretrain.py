@@ -32,17 +32,14 @@ class PretrainDataset(Dataset):
         return self.data.shape[0]
 
     def __getitem__(self, index: int):
-        sample = self.data[index]
-        # 正好是错开的数据
-        X = np.array(sample[:-1]).astype(np.int64)
-        Y = np.array(sample[1:]).astype(np.int64)
-        return torch.from_numpy(X), torch.from_numpy(Y)
+        sample = self.data[index].astype(np.int64)
+        return torch.from_numpy(sample)
 
 
-def process_wiki_clean():
+def process_wiki_clean(path_in, path_out):
     # download data: https://huggingface.co/datasets/pleisto/wikipedia-cn-20230720-filtered
     token = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
-    with open('/Users/fengyuan/Downloads/wikipedia-cn-20230720-filtered.json', 'r', encoding='utf-8') as f:
+    with open(path_in, 'r', encoding='utf-8') as f:
         data = json.load(f)
     doc_ids = []
     for line in tqdm(data):
@@ -52,7 +49,7 @@ def process_wiki_clean():
         if len(text_id) > 5:
             doc_ids += text_id
     arr = np.array(doc_ids, dtype=np.uint16)
-    with open('../00_assets/wiki.bin', 'wb') as f:
+    with open(path_out, 'wb') as f:
         f.write(arr.tobytes())
 
 
@@ -63,14 +60,13 @@ def train_epoch(model, dataloader, tp):
         model.eval()
 
     losses = 0
-    optimizer = torch.optim.Adam(model.parameters(),
-                                 lr=config['lr'],
+    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'],
                                  betas=(config['beta1'], config['beta2']))
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)
 
-    for step, (src, tgt) in enumerate(dataloader):
-        src = src.to(config['device'])
-        tgt = tgt.to(config['device'])
+    for i, d in enumerate(dataloader):
+        src = d[:, :-1].to(config['device'])
+        tgt = d[:, 1:].to(config['device'])
         tgt_predict = model(src, 0)
 
         if tp == 'train':
@@ -88,15 +84,20 @@ def train_epoch(model, dataloader, tp):
 
 
 if __name__ == "__main__":
-    # process_wiki_clean()
     # 模型训练不能用kv_cache，因为...
-    torch.autograd.set_detect_anomaly(True)
-
     with open('../00_assets/tiny_chinese_llama.yml', 'r') as file:
         config = yaml.safe_load(file)
-    train_ds = PretrainDataset(['../00_assets/wiki.bin'], max_length=config['max_seq_len'])
+    dp = '/Users/yuan.feng/Downloads/wikipedia-cn-20230720-filtered.json'
+
+    data_file = config['out_dir'] + 'wiki.bin'
+    if not os.path.exists(data_file):
+        print('-------data process--------')
+        process_wiki_clean(dp, data_file)
+
+    train_ds = PretrainDataset([data_file], max_length=config['max_seq_len'])
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=config['batch_size'])
 
+    # 模型定义
     if config['init_from'] == "scratch":
         print("Initializing a new model from scratch")
         model_args: ModelArgs = ModelArgs(
@@ -141,25 +142,18 @@ if __name__ == "__main__":
         # best_val_loss = checkpoint["best_val_loss"]
     else:
         model = None
+    model = model.to(config['device'])
 
-    # tokens = torch.randint(low=0, high=100, size=(32, 12), dtype=torch.long)
-    # summary(model, tokens, 0, show_input=True)
+    print("Total trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
     min_train_loss = float('inf')
     save_dir = os.path.join(config['out_dir'], 'pretrain')
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # _, (src, tgt) = next(enumerate(train_loader))
-    # src = src.to(config['device'])
-    # tgt = tgt.to(config['device'])
-    # tgt_predict = model(src, 0)
-    # print(tgt_predict.shape)
-    model = model.to(config['device'])
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
         with tqdm(total=len(list(train_loader)), desc=f'Epoch {epoch}', unit='batch') as pbar:
             train_loss = train_epoch(model, train_loader, 'train')
-
             if train_loss < min_train_loss:
                 min_train_loss = train_loss
                 torch.save(model.state_dict(), '{}/best.pth'.format(save_dir))

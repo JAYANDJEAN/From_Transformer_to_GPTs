@@ -1,4 +1,4 @@
-out_dir: '../00_assets'
+out_dir: '../00_assets/'
 num_epochs: 1
 init_from: 'scratch'
 batch_size: 32
