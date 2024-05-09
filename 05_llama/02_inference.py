@@ -21,26 +21,25 @@ if model_type == 'hf':
         print(tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0])
         print('-' * 40)
 elif model_type == '7b':
-    pass
-    # model = LlamaForCompletion.build(
-    #     checkpoints_dir=model_path + 'Llama-2-7b/',
-    #     tokenizer_path=model_path + 'Llama-2-7b/tokenizer.model',
-    #     tokenizer_tp='SPP',
-    #     max_batch_size=len(prompts),
-    #     max_seq_len=1024,
-    #     device=device
-    # )
-    # out_tokens, out_texts = (model.completion(prompts, max_gen_len=64))
-    # assert len(out_texts) == len(prompts)
-    # for i in range(len(out_texts)):
-    #     print(out_texts[i])
-    #     print('-' * 40)
+    model = LlamaForCompletion(
+        checkpoints_dir=model_path + 'Llama-2-7b/',
+        tokenizer_path=model_path + 'Llama-2-7b/tokenizer.model',
+        tokenizer_tp='SPP',
+        max_batch_size=len(prompts),
+        max_seq_len=1024,
+        device=device
+    )
+    out_tokens, out_texts = (model.completion(prompts, max_gen_len=64))
+    assert len(out_texts) == len(prompts)
+    for i in range(len(out_texts)):
+        print(out_texts[i])
+        print('-' * 40)
 elif model_type == 'tiny':
     model = LlamaForCompletion(
         checkpoints_dir='../00_assets/pretrain/',
         tokenizer_path='./chatglm_tokenizer/tokenizer.model',
         tokenizer_tp='GLM',
-        max_batch_size=1,
+        max_batch_size=3,
         max_seq_len=256,
         device=device
     )

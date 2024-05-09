@@ -95,22 +95,17 @@ def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, 
     for i in range(num_tokens + 4):
         # 这里不用mask也行的把
         tgt_mask = (generate_mask(ys.size(1))).to(device)
-
         # out: torch.Size([1, seq_len, d_model])
         out = model.decode(ys, memory, tgt_mask)
-
         # 取最后一个词的embedding，然后计算这个词的概率分布
         prob = model.generator(out[:, -1, :])
-
         # next_word: torch.Size([1])
         next_word = torch.argmax(prob, dim=1).unsqueeze(1)
-
         ys = torch.cat([ys, next_word], dim=1)
         if next_word.item() == SPECIAL_IDS['<eos>']:
             break
     tgt_tokens = ys.flatten()
     tgt_words = vocabs[tgt_lang].lookup_tokens(list(tgt_tokens.cpu().numpy()))
-
     return " ".join([i for i in tgt_words if i not in SPECIAL_IDS.keys()])
 
 

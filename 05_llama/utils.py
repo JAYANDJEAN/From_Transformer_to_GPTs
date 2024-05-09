@@ -36,7 +36,6 @@ class LlamaForCompletion:
             self.tokenizer = SentencePieceProcessor()
             self.tokenizer.load(tokenizer_path)
             self.args.vocab_size = self.tokenizer.vocab_size()
-            # !!!!!! The only unmatched key in the checkpoint is rope.freqs. Remove it
             del checkpoint['rope.freqs']
             self.pad_id = self.tokenizer.pad_id
             self.eos_id = self.tokenizer.eos_id
@@ -71,7 +70,6 @@ class LlamaForCompletion:
         total_len = min(self.args.max_seq_len, max_gen_len + max_prompt_len)
 
         # Create the list that will contain the generated tokens, along with the initial prompt tokens
-
         tokens = torch.full((batch_size, total_len), self.pad_id, dtype=torch.long, device=self.args.device)
         for k, t in enumerate(prompt_tokens):
             # Populate the initial tokens with the prompt tokens
