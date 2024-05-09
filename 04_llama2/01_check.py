@@ -3,6 +3,8 @@ from models import *
 from torch import Tensor
 import torch
 from modelsummary import summary
+from sentencepiece import SentencePieceProcessor
+import yaml
 
 
 def check_rope():
@@ -131,7 +133,9 @@ def check_feed_forward():
 
 def check_tokenizer():
     tokenizer = SentencePieceProcessor()
-    tokenizer.load('/Users/fengyuan/Documents/models/Llama-2-7b/tokenizer.model')
+    with open('../00_assets/local_settings.yml', 'r') as file:
+        config = yaml.safe_load(file)
+    tokenizer.load(config['model_path'] + 'Llama-2-7b/tokenizer.model')
 
     print('==========================tokenizer==========================')
     # 中文支持的不好把，“气”都没有。

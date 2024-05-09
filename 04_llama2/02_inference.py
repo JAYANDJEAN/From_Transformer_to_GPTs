@@ -2,19 +2,21 @@ from utils import LlamaForCompletion
 from transformers import AutoTokenizer, LlamaForCausalLM
 import torch
 import json
+import yaml
 
 with open('../00_assets/prompts.json', 'r') as file:
     data = json.load(file)
 prompts = data['prompts']
 torch.manual_seed(0)
-model_path = '/Users/fengyuan/Documents/models/'
+with open('../00_assets/local_settings.yml', 'r') as file:
+    config = yaml.safe_load(file)
 device = "cpu"  # 目前m3 max上的cpu可跑，还未测试cuda，mps报错，未细看
-model_type = 'tiny'  # '7b', 'hf'
+model_type = '7b'  # '7b', 'hf'
 
 # 两种生成出来的还是有些不一样的，我也没查具体原因。
 if model_type == 'hf':
-    model = LlamaForCausalLM.from_pretrained(model_path + "Llama-2-7b-hf")
-    tokenizer = AutoTokenizer.from_pretrained(model_path + "Llama-2-7b-hf")
+    model = LlamaForCausalLM.from_pretrained(config['model_path'] + "Llama-2-7b-hf")
+    tokenizer = AutoTokenizer.from_pretrained(config['model_path'] + "Llama-2-7b-hf")
     for prompt in prompts:
         inputs = tokenizer(prompt, return_tensors="pt")
         generate_ids = model.generate(inputs.input_ids, max_length=64)
@@ -22,8 +24,8 @@ if model_type == 'hf':
         print('-' * 40)
 elif model_type == '7b':
     model = LlamaForCompletion(
-        checkpoints_dir=model_path + 'Llama-2-7b/',
-        tokenizer_path=model_path + 'Llama-2-7b/tokenizer.model',
+        checkpoints_dir=config['model_path'] + 'Llama-2-7b/',
+        tokenizer_path=config['model_path'] + 'Llama-2-7b/tokenizer.model',
         tokenizer_tp='SPP',
         max_batch_size=len(prompts),
         max_seq_len=1024,

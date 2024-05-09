@@ -9,7 +9,6 @@ from torch.utils.data import Dataset
 import torch
 import os
 import yaml
-from modelsummary import summary
 
 '''
 https://github.com/DLLXW/baby-llama2-chinese
@@ -87,7 +86,9 @@ if __name__ == "__main__":
     # 模型训练不能用kv_cache，因为...
     with open('../00_assets/tiny_chinese_llama.yml', 'r') as file:
         config = yaml.safe_load(file)
-    dp = '/Users/yuan.feng/Downloads/wikipedia-cn-20230720-filtered.json'
+    with open('../00_assets/local_settings.yml', 'r') as file:
+        setting = yaml.safe_load(file)
+    dp = setting['model_path'] + 'wikipedia-cn-20230720-filtered.json'
 
     data_file = config['out_dir'] + 'wiki.bin'
     if not os.path.exists(data_file):
