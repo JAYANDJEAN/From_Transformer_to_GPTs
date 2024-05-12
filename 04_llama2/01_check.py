@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from models import *
+from llama import *
 from torch import Tensor
 import torch
 from modelsummary import summary
@@ -198,11 +198,11 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    # check_rope()
-    # check_rms_norm()
-    # check_silu()
-    # check_kv_cache()
-    # check_feed_forward()
-    # check_tokenizer()
-    # check_model_and_loss()
+    check_rope()
+    check_rms_norm()
+    check_silu()
+    check_kv_cache()
+    check_feed_forward()
+    check_tokenizer()
+    check_model_and_loss()
     check_glm_tokenizer()

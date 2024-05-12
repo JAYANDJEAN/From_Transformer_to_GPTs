@@ -15,18 +15,32 @@ https://github.com/hkproj/pytorch-llama
 
 @dataclass
 class ModelArgs:
-    dim: int = 4096  # d_model
+    '''
+    n_kv_heads:
+        This is the number of key_value heads that should be used to implement Grouped Query Attention.
+        If `n_kv_heads=n_heads`, the model will use Multi Head Attention (MHA),
+        if `n_kv_heads=1 the model will use Multi Query Attention (MQA) otherwise GQA is used. When
+        converting a multi-head checkpoint to a GQA checkpoint, each group key and value head should be constructed
+        by mean-pooling all the original heads within that group. For more details checkout [this
+        paper](https://arxiv.org/pdf/2305.13245.pdf). If it is not specified, will default to
+        `num_attention_heads`.
+    '''
+    dim: int = 4096  # Dimension of the hidden representations.
     n_layers: int = 32
     n_heads: int = 32
     n_kv_heads: Optional[int] = None
     vocab_size: int = -1  # Later set in the build method
+
     multiple_of: int = 256  # make SwiGLU hidden layer size multiple of large power of 2
     ffn_dim_multiplier: Optional[float] = None
+
     norm_eps: float = 1e-5
     max_batch_size: int = 32
     max_seq_len: int = 2048
+
     device: str = None
-    kv_cache: bool = True  # use kv_cache or not
+    use_cache: bool = True  # use use_cache or not
+    dropout: float = 0.0
 
 
 def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
@@ -111,11 +125,11 @@ class RMSNorm(nn.Module):
 class Attention(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
+        self.args = args
         self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
-        self.n_heads_q = args.n_heads
-        self.n_rep = self.n_heads_q // self.n_kv_heads
-        self.head_dim = args.dim // args.n_heads
-        self.device = args.device
+        self.n_q_heads = args.n_heads
+        self.n_rep = self.n_q_heads // self.n_kv_heads
+        self.head_dim = args.dim // args.n_heads  # dim of every head
 
         self.wq = nn.Linear(args.dim, args.n_heads * self.head_dim, bias=False)
         self.wk = nn.Linear(args.dim, self.n_kv_heads * self.head_dim, bias=False)
@@ -123,27 +137,25 @@ class Attention(nn.Module):
         # Linear transformation for output.
         self.wo = nn.Linear(args.n_heads * self.head_dim, args.dim, bias=False)
 
-        self.kv_cache = args.kv_cache
         self.cache_k = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
         self.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
+        self.dropout = nn.Dropout(args.dropout)
 
-    def forward(self, x: Tensor, start_pos: int,
-                freqs_complex: Tensor,
-                mask: Optional[Tensor]):
+    def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor]):
         # x: (batch_size, seq_len, dim)
         batch_size, seq_len, _ = x.shape
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
         # -> (batch_size, seq_len, n_head_q, head_dim)
-        xq = xq.view(batch_size, seq_len, self.n_heads_q, self.head_dim)
+        xq = xq.view(batch_size, seq_len, self.n_q_heads, self.head_dim)
         xk = xk.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
         xv = xv.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
 
         # -> (batch_size, seq_len, n_head_q, head_dim)
-        xq = apply_rotary_embeddings(xq, freqs_complex, self.device)
+        xq = apply_rotary_embeddings(xq, freqs_complex, self.args.device)
         # -> (batch_size, seq_len, n_head_kv, head_dim)
-        xk = apply_rotary_embeddings(xk, freqs_complex, self.device)
+        xk = apply_rotary_embeddings(xk, freqs_complex, self.args.device)
 
-        if self.kv_cache:
+        if self.args.use_cache:
             # 保存
             self.cache_k[:batch_size, start_pos: start_pos + seq_len] = xk
             self.cache_v[:batch_size, start_pos: start_pos + seq_len] = xv
@@ -154,7 +166,7 @@ class Attention(nn.Module):
             xv = self.cache_v[:batch_size, 0: start_pos + seq_len]
 
         # (batch_size, seq_len_kv, n_head_q, head_dim)
-        # 因为 self.n_rep = self.n_heads_q // self.n_kv_heads
+        # 因为 self.n_rep = self.n_q_heads // self.n_kv_heads
         xk = repeat_kv(xk, self.n_rep)
         xv = repeat_kv(xv, self.n_rep)
 
@@ -171,7 +183,7 @@ class Attention(nn.Module):
         if mask is not None:
             scores = scores + mask  # (batch_size, n_head_q, seq_len, seq_len_kv)
         # -> (batch_size, n_head_q, seq_len, seq_len_kv)
-        scores = F.softmax(scores.float(), dim=-1).type_as(xq)
+        scores = self.dropout(F.softmax(scores.float(), dim=-1).type_as(xq))
 
         # (batch_size, n_head_q, seq_len, seq_len_kv) @ (batch_size, n_head_q, seq_len_kv, head_dim)
         # -> (batch_size, n_head_q, seq_len, head_dim)
@@ -186,6 +198,7 @@ class Attention(nn.Module):
 class FeedForward(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
+        # 这一堆计算能否简化
         hidden_dim = 4 * args.dim
         hidden_dim = int(2 * hidden_dim / 3)
         if args.ffn_dim_multiplier is not None:
@@ -214,19 +227,11 @@ class FeedForward(nn.Module):
 class DecoderBlock(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
-
-        self.n_heads = args.n_heads
-        self.dim = args.dim
-        self.head_dim = args.dim // args.n_heads
-
         # Attention, FeedForward 都是输入：(batch_size, seq_len, dim)
         # 输出：(batch_size, seq_len, dim)
         self.attention = Attention(args)
-        self.feed_forward = FeedForward(args)
-
-        # Normalization BEFORE the attention block
         self.attention_norm = RMSNorm(args.dim, eps=args.norm_eps)
-        # Normalization BEFORE the feed forward block
+        self.feed_forward = FeedForward(args)
         self.ffn_norm = RMSNorm(args.dim, eps=args.norm_eps)
 
     def forward(self, x: Tensor, start_pos: int, freqs_complex: Tensor, mask: Optional[Tensor]):
@@ -241,18 +246,14 @@ class LlamaModel(nn.Module):
     def __init__(self, args: ModelArgs):
         super().__init__()
         assert args.vocab_size != -1, "Vocab size must be set"
-
         self.args = args
-        self.vocab_size = args.vocab_size
-        self.n_layers = args.n_layers
-        self.tok_embeddings = nn.Embedding(self.vocab_size, args.dim)
-
+        self.tok_embeddings = nn.Embedding(args.vocab_size, args.dim)
         self.layers = nn.ModuleList()
-        for layer_id in range(args.n_layers):
+        for _ in range(args.n_layers):
             self.layers.append(DecoderBlock(args))
 
         self.norm = RMSNorm(args.dim, eps=args.norm_eps)
-        self.output = nn.Linear(args.dim, self.vocab_size, bias=False)
+        self.output = nn.Linear(args.dim, args.vocab_size, bias=False)
         self.freqs_complex = precompute_theta_pos_frequencies(self.args.dim // self.args.n_heads,
                                                               self.args.max_seq_len * 2,
                                                               self.args.device)
@@ -265,12 +266,8 @@ class LlamaModel(nn.Module):
         mask = None
         # 当第一次读入prompt时，prompt较长，可以加mask一次计算，以后读入单个token，就不需要mask
         if seq_len > 1:
-            mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"),
-                                         device=self.args.device),
-                              diagonal=1)
-            mask = torch.hstack(
-                [torch.zeros((seq_len, start_pos), device=self.args.device), mask]
-            ).type_as(h)
+            mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"), device=self.args.device), diagonal=1)
+            mask = torch.hstack([torch.zeros((seq_len, start_pos), device=self.args.device), mask]).type_as(h)
 
         for layer in self.layers:
             h = layer(h, start_pos, freqs_complex, mask)

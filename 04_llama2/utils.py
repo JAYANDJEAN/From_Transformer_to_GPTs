@@ -7,7 +7,7 @@ from tqdm import tqdm
 import torch
 from sentencepiece import SentencePieceProcessor
 from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
-from models import ModelArgs, LlamaModel, sample_top_p
+from llama import ModelArgs, LlamaModel, sample_top_p
 import os
 
 
@@ -23,7 +23,7 @@ def init_model(config):
             vocab_size=config['vocab_size'],
             multiple_of=config['multiple_of'],
             max_seq_len=config['max_seq_len'],
-            kv_cache=False,
+            use_cache=False,
             device=config['device']
         )
         model = LlamaModel(model_args)
@@ -40,7 +40,7 @@ def init_model(config):
             vocab_size=config['vocab_size'],
             multiple_of=config['multiple_of'],
             max_seq_len=config['max_seq_len'],
-            kv_cache=False,
+            use_cache=False,
             device=config['device']
         )
         model = LlamaModel(model_args)
