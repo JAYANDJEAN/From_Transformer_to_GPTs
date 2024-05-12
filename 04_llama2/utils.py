@@ -21,7 +21,6 @@ def init_model(config):
             n_heads=config['n_heads'],
             n_kv_heads=config['n_heads'],
             vocab_size=config['vocab_size'],
-            multiple_of=config['multiple_of'],
             max_seq_len=config['max_seq_len'],
             use_cache=False,
             device=config['device']
@@ -38,7 +37,6 @@ def init_model(config):
             n_heads=config['n_heads'],
             n_kv_heads=config['n_heads'],
             vocab_size=config['vocab_size'],
-            multiple_of=config['multiple_of'],
             max_seq_len=config['max_seq_len'],
             use_cache=False,
             device=config['device']
@@ -70,14 +68,10 @@ class LlamaForCompletion:
         checkpoint = torch.load(checkpoints[0], map_location="cpu")
         print(f"Loaded checkpoint in {time.time() - prev_time:.2f}s")
 
-        with open(Path(checkpoints_dir) / "params.json", "r") as f:
-            params = json.loads(f.read())
-
         self.args: ModelArgs = ModelArgs(
             max_seq_len=max_seq_len,
             max_batch_size=max_batch_size,
-            device=device,
-            **params
+            device=device
         )
 
         # 兼容一下不同的tokenizer

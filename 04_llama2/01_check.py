@@ -128,8 +128,9 @@ def check_kv_cache():
 
 
 def check_feed_forward():
-    # todo
-    pass
+    args = ModelArgs()
+    ffn = FeedForward(args)
+    print(ffn.w1)
 
 
 def check_tokenizer():
@@ -198,11 +199,13 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    check_rope()
-    check_rms_norm()
-    check_silu()
-    check_kv_cache()
+    # check_rope()
+    # check_rms_norm()
+    # check_silu()
+    # check_kv_cache()
+    # check_feed_forward()
+    # check_tokenizer()
+    # check_model_and_loss()
+    # check_glm_tokenizer()
+
     check_feed_forward()
-    check_tokenizer()
-    check_model_and_loss()
-    check_glm_tokenizer()
