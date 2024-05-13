@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
-from xformers.ops.fmha.attn_bias import (
-    AttentionBias,
-    BlockDiagonalCausalMask,
-    BlockDiagonalCausalWithOffsetPaddedKeysMask,
-    BlockDiagonalMask,
-)
-from xformers.ops.fmha import memory_efficient_attention
+# from xformers.ops.fmha.attn_bias import (
+#     AttentionBias,
+#     BlockDiagonalCausalMask,
+#     BlockDiagonalCausalWithOffsetPaddedKeysMask,
+#     BlockDiagonalMask,
+# )
+# from xformers.ops.fmha import memory_efficient_attention
 from llama import FeedForward, RMSNorm, precompute_freqs_cis, apply_rotary_embeddings
 
 '''
@@ -354,7 +354,7 @@ class Attention(nn.Module):
         output = memory_efficient_attention(xq, key, val, None if cache is None else cache.mask)
         # (B=1, Seq, N_Heads, Head_Dim) --> (Seq, N_Heads * Head_Dim) --> (Seq, Dim)
         return self.wo(output.view(seqlen_sum, self.n_heads * self.head_dim))
-
+git
 
 class MoeLayer(nn.Module):
     def __init__(self, experts: List[nn.Module], gate: nn.Module, num_experts_per_tok):

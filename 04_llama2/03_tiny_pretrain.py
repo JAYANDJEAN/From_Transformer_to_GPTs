@@ -12,6 +12,7 @@ import yaml
 
 '''
 https://github.com/DLLXW/baby-llama2-chinese
+# 未完成！
 '''
 
 
