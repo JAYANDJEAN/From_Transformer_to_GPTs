@@ -21,6 +21,7 @@ from llama import FeedForward, RMSNorm, precompute_freqs_cis, apply_rotary_embed
 https://www.youtube.com/watch?v=UiX8K-xBUpE
 https://github.com/hkproj/mistral-src-commented
 https://github.com/hkproj/mistral-llm-notes/
+mixtral的kv_cache没看懂
 '''
 
 
@@ -354,7 +355,7 @@ class Attention(nn.Module):
         output = memory_efficient_attention(xq, key, val, None if cache is None else cache.mask)
         # (B=1, Seq, N_Heads, Head_Dim) --> (Seq, N_Heads * Head_Dim) --> (Seq, Dim)
         return self.wo(output.view(seqlen_sum, self.n_heads * self.head_dim))
-git
+
 
 class MoeLayer(nn.Module):
     def __init__(self, experts: List[nn.Module], gate: nn.Module, num_experts_per_tok):

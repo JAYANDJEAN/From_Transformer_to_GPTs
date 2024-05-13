@@ -76,6 +76,21 @@ def check_silu():
 
 
 def check_kv_cache():
+    """
+    kv_cache 的确是能减少计算量的，
+    可以看到方法1总共计算了4*4*(1+2+3)次乘法
+    方法2总共计算了4*4*3*3次乘法
+    Method_1:
+    score = torch.Size([2, 1, 1, 4]) * torch.Size([2, 1, 4, 1])
+    ------------------------------
+    score = torch.Size([2, 1, 1, 4]) * torch.Size([2, 1, 4, 2])
+    ------------------------------
+    score = torch.Size([2, 1, 1, 4]) * torch.Size([2, 1, 4, 3])
+    ------------------------------
+    ======================================================================
+    Method_2:
+    score = torch.Size([2, 1, 3, 4]) * torch.Size([2, 1, 4, 3])
+    """
     dim = 4
     n_heads = 1
     max_seq_len = 10
@@ -83,6 +98,7 @@ def check_kv_cache():
     seq_len = 3
     batch_size = 2
     show_cache = True
+    show = False
     freqs_complex = precompute_freqs_cis(dim, seq_len, DEVICE)
     model_args: ModelArgs = ModelArgs(
         n_heads=n_heads,
@@ -106,25 +122,25 @@ def check_kv_cache():
         f = freqs_complex[i:i + 1]
         output1 = attention1(t, i, f, None)
         print('-' * 30)
-        if show_cache:
-            print('cache_k_1:')
-            print(attention1.cache_k[:batch_size, :i + 1].squeeze())
-        else:
-            print('output_1:')
-            print(output1.squeeze())
+        if show:
+            if show_cache:
+                print('cache_k_1:')
+                print(attention1.cache_k[:batch_size, :i + 1].squeeze())
+            else:
+                print('output_1:')
+                print(output1.squeeze())
 
     print('=' * 70)
     print('Method_2:')
-    mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"),
-                                 device=DEVICE),
-                      diagonal=1)
+    mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"), device=DEVICE), diagonal=1)
     output2 = attention2(x, 0, freqs_complex, mask)
-    if show_cache:
-        print('cache_k_2:')
-        print(attention2.cache_k[:batch_size, :seq_len].squeeze())
-    else:
-        print('output_2:')
-        print(output2.squeeze())
+    if show:
+        if show_cache:
+            print('cache_k_2:')
+            print(attention2.cache_k[:batch_size, :seq_len].squeeze())
+        else:
+            print('output_2:')
+            print(output2.squeeze())
 
 
 def check_feed_forward():
@@ -274,11 +290,11 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    check_rope()
-    check_rms_norm()
-    check_silu()
+    # check_rope()
+    # check_rms_norm()
+    # check_silu()
     check_kv_cache()
-    check_feed_forward()
-    # check_tokenizer()
-    check_glm_tokenizer()
-    check_model_and_loss()
+    # check_feed_forward()
+    # # check_tokenizer()
+    # check_glm_tokenizer()
+    # check_model_and_loss()

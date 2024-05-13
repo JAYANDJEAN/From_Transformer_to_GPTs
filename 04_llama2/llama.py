@@ -144,7 +144,7 @@ class Attention(nn.Module):
         xk = apply_rotary_embeddings(xk, freqs_complex, self.args.device)
 
         if self.args.use_cache:
-            # 保存 这个不算真正的kv_cache吧，因为它并不能减少计算。
+            # 保存
             self.cache_k[:batch_size, start_pos: start_pos + seq_len] = xk
             self.cache_v[:batch_size, start_pos: start_pos + seq_len] = xv
             # -> (batch_size, seq_len_kv, n_head_kv, head_dim)
@@ -167,6 +167,7 @@ class Attention(nn.Module):
 
         # (batch_size, n_head_q, seq_len, head_dim) @ (batch_size, n_head_q, head_dim, seq_len_kv)
         # -> (batch_size, n_head_q, seq_len, seq_len_kv)
+        # print(f'score = {xq.shape} * {xk.transpose(2, 3).shape}')
         scores = torch.matmul(xq, xk.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
             scores = scores + mask  # (batch_size, n_head_q, seq_len, seq_len_kv)
