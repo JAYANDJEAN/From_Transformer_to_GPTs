@@ -17,9 +17,11 @@ def init_model(config):
         dim=config['dim'],
         n_layers=config['n_layers'],
         n_heads=config['n_heads'],
-        n_kv_heads=config['n_heads'],
+        n_kv_heads=config['n_kv_heads'],
         vocab_size=config['vocab_size'],
         max_seq_len=config['max_seq_len'],
+        hidden_dim=config['hidden_dim'],
+        dropout=config['dropout'],
         use_cache=False,
         device=config['device']
     )

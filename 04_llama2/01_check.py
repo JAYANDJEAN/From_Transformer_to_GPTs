@@ -31,7 +31,7 @@ def check_rope():
             else:
                 return self.dropout(x + self.pos_embedding[:x.size(0), :, :])
 
-    freqs_complex = precompute_theta_pos_frequencies(D_MODEL, MAX_LEN, 'cpu')
+    freqs_complex = precompute_freqs_cis(D_MODEL, MAX_LEN, 'cpu')
     x = torch.ones((1, MAX_LEN, 1, D_MODEL))
 
     pe = PositionalEncoding(MAX_LEN, D_MODEL, 0.1, batch_first=True)
@@ -83,7 +83,7 @@ def check_kv_cache():
     seq_len = 3
     batch_size = 2
     show_cache = True
-    freqs_complex = precompute_theta_pos_frequencies(dim, seq_len, DEVICE)
+    freqs_complex = precompute_freqs_cis(dim, seq_len, DEVICE)
     model_args: ModelArgs = ModelArgs(
         n_heads=n_heads,
         dim=dim,
@@ -134,8 +134,8 @@ def check_feed_forward():
     multiple_of = 256
     hidden_dim = int(2 * 4 * dim / 3)
     hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
-    print(hidden_dim)
-    print(ffn.w1)
+    print('hidden_dim:', hidden_dim)
+    # todo
 
 
 def check_tokenizer():
@@ -160,12 +160,12 @@ def check_tokenizer():
 def check_glm_tokenizer():
     tokenizer_path = './chatglm_tokenizer/tokenizer.model'
     tokenizer = ChatGLMTokenizer(vocab_file=tokenizer_path)
-    print(tokenizer.pad_token_id)
-    print(tokenizer.bos_token_id)
-    print(tokenizer.eos_token_id)
-    print(tokenizer.special_tokens['<bos>'])
-    print(tokenizer.special_tokens['<eos>'])
-    print(tokenizer.special_tokens['<pad>'])
+    print('pad_token_id:', tokenizer.pad_token_id)
+    print('bos_token_id:', tokenizer.bos_token_id)
+    print('eos_token_id:', tokenizer.eos_token_id)
+    print('pad_token_id:', tokenizer.special_tokens['<pad>'])
+    print('bos_token_id:', tokenizer.special_tokens['<bos>'])
+    print('eos_token_id:', tokenizer.special_tokens['<eos>'])
 
 
 def check_model_and_loss():
@@ -202,13 +202,11 @@ if __name__ == '__main__':
     DIM_FF = 256
     DEVICE = 'cpu'
 
-    # check_rope()
-    # check_rms_norm()
-    # check_silu()
-    # check_kv_cache()
-    # check_feed_forward()
-    # check_tokenizer()
-    # check_model_and_loss()
-    # check_glm_tokenizer()
-
+    check_rope()
+    check_rms_norm()
+    check_silu()
+    check_kv_cache()
     check_feed_forward()
+    # check_tokenizer()
+    check_glm_tokenizer()
+    check_model_and_loss()
