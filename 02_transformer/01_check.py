@@ -22,19 +22,19 @@ def check_positional_encoding():
 
     pe1 = PositionalEncoding(MAX_LEN, D_MODEL, 0.1, batch_first=False)
     pe2 = PositionalEncoding(MAX_LEN, D_MODEL, 0.1, batch_first=True)
-    print(pe1.pos_embedding.requires_grad)
+    print('check trainable: ', pe1.pos_embedding.requires_grad)
     pos_enc_list = [positional_encoding_loop(MAX_LEN, D_MODEL),
                     pe1.pos_embedding.squeeze().numpy(),
                     pe2.pos_embedding.squeeze().numpy()]
     title_list = ['Explicit Loop Positional Encoding',
-                  'PyTorch Positional Encoding seq_len',
+                  'PyTorch Positional Encoding SRC_SEQ_LEN',
                   'PyTorch Positional Encoding batch_first']
 
-    input_tensor = torch.randn(SEQ_LEN, BATCH_SIZE, D_MODEL)
+    input_tensor = torch.randn(SRC_SEQ_LEN, BATCH_SIZE, D_MODEL)
     output_tensor = pe1(input_tensor)
     assert output_tensor.shape == input_tensor.shape
 
-    input_tensor = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
+    input_tensor = torch.randn(BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
     output_tensor = pe2(input_tensor)
     assert output_tensor.shape == input_tensor.shape
 
@@ -53,25 +53,25 @@ def check_positional_encoding():
 
 def check_scale_dot_product_attention():
     attention = ScaleDotProductAttention()
-    SEQ_LEN = 5
+    SRC_SEQ_LEN = 5
 
-    q = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
-    k = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
-    v = torch.randn(BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
+    q = torch.randn(BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, D_MODEL)
+    k = torch.randn(BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, D_MODEL)
+    v = torch.randn(BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, D_MODEL)
     attended_values, attention_weights = attention(q, k, v)
-    assert attended_values.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
-    assert attention_weights.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, SEQ_LEN)
+    assert attended_values.shape == (BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, D_MODEL)
+    assert attention_weights.shape == (BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, SRC_SEQ_LEN)
     print('weights before mask:')
     print(attention_weights[0, 0, :, :])
 
-    mask = torch.triu(torch.full((SEQ_LEN, SEQ_LEN), float('-inf')), diagonal=1)
+    mask = generate_mask(SRC_SEQ_LEN)
     print('mask tensor is: ')
     print(mask)
 
     attended_values_masked, attention_weights_masked = attention(q, k, v, mask)
 
-    assert attended_values_masked.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, D_MODEL)
-    assert attention_weights_masked.shape == (BATCH_SIZE, N_HEAD, SEQ_LEN, SEQ_LEN)
+    assert attended_values_masked.shape == (BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, D_MODEL)
+    assert attention_weights_masked.shape == (BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, SRC_SEQ_LEN)
     print('weights after mask:')
     print(attention_weights_masked[0, 0, :, :])
 
@@ -84,29 +84,29 @@ def check_scale_dot_product_attention():
 def check_multi_head_attention():
     model = MultiHeadAttention(D_MODEL, N_HEAD)
     # Generate random input tensors
-    q = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
-    k = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
-    v = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
+    q = torch.randn(BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
+    k = torch.randn(BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
+    v = torch.randn(BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
     out = model(q, k, v)
-    assert out.shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
+    assert out.shape == (BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
 
 
 def check_encoder_layer():
     model = EncoderLayer(D_MODEL, DIM_FF, N_HEAD, DROPOUT)
-    src_emb = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
-    src_mask = torch.ones(SEQ_LEN, SEQ_LEN)
+    src_emb = torch.randn(BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
+    src_mask = torch.ones(SRC_SEQ_LEN, SRC_SEQ_LEN)
     out = model(src_emb, src_mask)
-    assert out.shape == (BATCH_SIZE, SEQ_LEN, D_MODEL)
+    assert out.shape == (BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
 
 
 def check_decoder_layer():
     model = DecoderLayer(D_MODEL, DIM_FF, N_HEAD, DROPOUT)
-    src_emb = torch.randn(BATCH_SIZE, SEQ_LEN, D_MODEL)
+    src_emb = torch.randn(BATCH_SIZE, SRC_SEQ_LEN, D_MODEL)
     tgt_emb = torch.randn(BATCH_SIZE, TGT_SEQ_LEN, D_MODEL)
     tgt_mask = torch.ones(TGT_SEQ_LEN, TGT_SEQ_LEN)
 
     out = model(tgt_emb, src_emb, tgt_mask)
-    print(out.shape)
+    assert out.shape == (BATCH_SIZE, TGT_SEQ_LEN, D_MODEL)
 
 
 def check_transformer():
@@ -120,11 +120,11 @@ def check_transformer():
     print("Total trainable parameters:", count_parameters(model_scratch))
     print("Total trainable parameters:", count_parameters(model_torch))
 
-    src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SEQ_LEN), dtype=torch.int)
+    src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SRC_SEQ_LEN), dtype=torch.int)
     tgt = torch.randint(low=0, high=100, size=(BATCH_SIZE, TGT_SEQ_LEN), dtype=torch.int)
-    src_mask = torch.randn(SEQ_LEN, SEQ_LEN)
+    src_mask = torch.randn(SRC_SEQ_LEN, SRC_SEQ_LEN)
     tgt_mask = torch.randn(TGT_SEQ_LEN, TGT_SEQ_LEN)
-    src_padding_mask = torch.randn(BATCH_SIZE, SEQ_LEN)
+    src_padding_mask = torch.randn(BATCH_SIZE, SRC_SEQ_LEN)
     tgt_padding_mask = torch.randn(BATCH_SIZE, TGT_SEQ_LEN)
 
     print('-------model_scratch---------')
@@ -243,11 +243,11 @@ if __name__ == '__main__':
     MAX_LEN = 100
     D_MODEL = 512
     BATCH_SIZE = 64
-    SEQ_LEN = 23
+    SRC_SEQ_LEN = 23
+    TGT_SEQ_LEN = 17
     N_HEAD = 8
     DIM_FF = 256
     DROPOUT = 0.1
-    TGT_SEQ_LEN = 17
 
     check_positional_encoding()
     check_scale_dot_product_attention()

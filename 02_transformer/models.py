@@ -77,24 +77,25 @@ class MultiHeadAttention(nn.Module):
         assert d_model % n_head == 0, "d_model must be divisible by num_heads"
         self.n_head = n_head
         self.d_tensor = d_model // n_head
+        self.d_model = d_model
 
         self.attention = ScaleDotProductAttention()
         self.w_q = nn.Linear(d_model, d_model)
         self.w_k = nn.Linear(d_model, d_model)
         self.w_v = nn.Linear(d_model, d_model)
-        self.fc = nn.Linear(d_model, d_model)
+        self.w_o = nn.Linear(d_model, d_model)
 
     def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None):
         # q, k, v: [batch_size, seq_len, d_model]
-        batch_size, seq_len, d_model = q.size()
+        # 在decoder时，q:[batch_size, src_seq_len, d_model], kv:[batch_size, tgt_seq_len, d_model]
         q, k, v = self.w_q(q), self.w_k(k), self.w_v(v)
-        q = q.view(batch_size, seq_len, self.n_head, self.d_tensor).transpose(1, 2)
-        k = k.view(batch_size, seq_len, self.n_head, self.d_tensor).transpose(1, 2)
-        v = v.view(batch_size, seq_len, self.n_head, self.d_tensor).transpose(1, 2)
+        q = q.view(q.shape[0], q.shape[1], self.n_head, self.d_tensor).transpose(1, 2)
+        k = k.view(k.shape[0], k.shape[1], self.n_head, self.d_tensor).transpose(1, 2)
+        v = v.view(v.shape[0], v.shape[1], self.n_head, self.d_tensor).transpose(1, 2)
+        # out: [batch_size, n_head, tgt_seq_len, d_model]
         out, attention = self.attention(q, k, v, mask=mask)
-        out = out.transpose(1, 2).contiguous().view(batch_size, seq_len, d_model)
-
-        return self.fc(out)
+        out = out.transpose(1, 2).contiguous().view(out.shape[0], -1, self.n_head * self.d_tensor)
+        return self.w_o(out)
 
 
 class FeedForward(nn.Module):
