@@ -22,24 +22,23 @@ from llama import FeedForward, RMSNorm, precompute_freqs_cis, apply_rotary_embed
 
 @dataclass
 class ModelArgs:
-    dim: int
-    n_layers: int
-    head_dim: int
-    hidden_dim: int
-    n_heads: int
-    n_kv_heads: int
-    norm_eps: float
-    vocab_size: int
+    dim: int = 4096
+    n_layers: int = 32
+    n_heads: int = 32
+    n_kv_heads: int = 8
 
-    use_moe: bool
-    num_experts: int
-    num_experts_per_tok: int
+    head_dim: int = 128  # dim / n_heads
+    vocab_size: int = 32000
+    hidden_dim: int = 14336
+    norm_eps: float = 1e-5
+    max_batch_size: int = 32
+    max_seq_len: int = 8192
 
-    max_batch_size: int = 0
-    # For rotary embeddings. If not set, will be infered from sliding window.
-    rope_theta: Optional[float] = None
-    # If this is set, use sliding window attention rotating cache.
-    sliding_window: Optional[int] = None
+    use_moe: bool = True
+    num_experts: int = 8
+    num_experts_per_tok: int = 2
+
+    sliding_window: Optional[int] = 4096
     device: str = None
 
 
@@ -410,9 +409,7 @@ class Transformer(nn.Module):
         self.args = args
         self.vocab_size = args.vocab_size
 
-        theta = self.args.rope_theta
-        if theta is None:
-            theta = 1000000.0 if self.args.sliding_window is None else 10000.0
+        theta = 1000000.0 if self.args.sliding_window is None else 10000.0
         self.freqs_cis = precompute_freqs_cis(
             self.args.head_dim, 128_000, args.device, theta
         )
