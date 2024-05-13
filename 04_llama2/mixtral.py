@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
-# from xformers.ops.fmha.attn_bias import (
-#     AttentionBias,
-#     BlockDiagonalCausalMask,
-#     BlockDiagonalCausalWithOffsetPaddedKeysMask,
-#     BlockDiagonalMask,
-# )
-# from xformers.ops.fmha import memory_efficient_attention
+from xformers.ops.fmha.attn_bias import (
+    AttentionBias,
+    BlockDiagonalCausalMask,
+    BlockDiagonalCausalWithOffsetPaddedKeysMask,
+    BlockDiagonalMask,
+)
+from xformers.ops.fmha import memory_efficient_attention
 from llama import FeedForward, RMSNorm, precompute_freqs_cis, apply_rotary_embeddings
 
 '''
