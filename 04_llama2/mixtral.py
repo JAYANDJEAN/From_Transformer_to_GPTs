@@ -17,8 +17,12 @@ from xformers.ops.fmha.attn_bias import (
 from xformers.ops.fmha import memory_efficient_attention
 from llama import FeedForward, RMSNorm, precompute_freqs_cis, apply_rotary_embeddings
 
+'''
+https://www.youtube.com/watch?v=UiX8K-xBUpE
+https://github.com/hkproj/mistral-src-commented
+https://github.com/hkproj/mistral-llm-notes/
+'''
 
-# https://www.youtube.com/watch?v=UiX8K-xBUpE
 
 @dataclass
 class ModelArgs:

@@ -8,6 +8,7 @@ from torch import Tensor
 
 '''
 LLaMa-2
+https://www.youtube.com/watch?v=oM4VmoabDAI&t=6004s
 https://github.com/meta-llama/llama/
 https://github.com/hkproj/pytorch-llama
 '''
