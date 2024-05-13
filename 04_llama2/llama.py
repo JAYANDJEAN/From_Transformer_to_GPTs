@@ -15,16 +15,6 @@ https://github.com/hkproj/pytorch-llama
 
 @dataclass
 class ModelArgs:
-    '''
-    n_kv_heads:
-        This is the number of key_value heads that should be used to implement Grouped Query Attention.
-        If `n_kv_heads=n_heads`, the model will use Multi Head Attention (MHA),
-        if `n_kv_heads=1 the model will use Multi Query Attention (MQA) otherwise GQA is used. When
-        converting a multi-head checkpoint to a GQA checkpoint, each group key and value head should be constructed
-        by mean-pooling all the original heads within that group. For more details checkout [this
-        paper](https://arxiv.org/pdf/2305.13245.pdf). If it is not specified, will default to
-        `num_attention_heads`.
-    '''
     dim: int = 4096  # Dimension of the hidden representations.
     n_layers: int = 32
     n_heads: int = 32
@@ -40,7 +30,7 @@ class ModelArgs:
     dropout: float = 0.0
 
 
-def precompute_theta_pos_frequencies(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
+def precompute_freqs_cis(head_dim: int, seq_len: int, device: str, base: float = 10000.0):
     assert head_dim % 2 == 0, "dimension must be divisible by 2"
     # Shape: (head_dim / 2)
     theta_numerator = torch.arange(0, head_dim, 2).float()
@@ -244,9 +234,9 @@ class LlamaModel(nn.Module):
 
         self.norm = RMSNorm(args.dim, eps=args.norm_eps)
         self.output = nn.Linear(args.dim, args.vocab_size, bias=False)
-        self.freqs_complex = precompute_theta_pos_frequencies(self.args.dim // self.args.n_heads,
-                                                              self.args.max_seq_len * 2,
-                                                              self.args.device)
+        self.freqs_complex = precompute_freqs_cis(self.args.dim // self.args.n_heads,
+                                                  self.args.max_seq_len * 2,
+                                                  self.args.device)
 
     def forward(self, tokens: Tensor, start_pos: int):
         # (batch_size, seq_len)

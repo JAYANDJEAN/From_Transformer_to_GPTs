@@ -15,6 +15,7 @@
 3. 参考：
    1. https://github.com/hyunwoongko/transformer 
    2. https://pytorch.org/tutorials/beginner/translation_transformer.html
+   3. https://nlp.seas.harvard.edu/annotated-transformer/
 
 ### 3、T5
 

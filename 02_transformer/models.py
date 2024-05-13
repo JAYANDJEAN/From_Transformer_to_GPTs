@@ -2,11 +2,18 @@ import math
 import torch
 from torch import Tensor
 import torch.nn as nn
+from typing import Optional
 
 
 class TokenEmbedding(nn.Module):
-    def __init__(self, vocab_size: int, d_model: int):
-        super(TokenEmbedding, self).__init__()
+    r"""TokenEmbedding.
+    Args:
+        d_model: the number of expected features in the encoder/decoder inputs (default=512).
+        vocab_size: the number of vocabulary.
+    """
+
+    def __init__(self, vocab_size: int = -1, d_model: int = 512):
+        super().__init__()
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.d_model = d_model
 
@@ -15,8 +22,17 @@ class TokenEmbedding(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, max_len: int, d_model: int, dropout: float, batch_first=False):
-        super(PositionalEncoding, self).__init__()
+    r"""PositionalEncoding
+    Args:
+        max_len: the max length of sequence
+        d_model: the number of expected features in the encoder/decoder inputs (default=512).
+        dropout: the dropout value (default=0.1).
+        batch_first: If ``True``, then the input and output tensors are provided
+            as (batch, seq, feature)
+    """
+
+    def __init__(self, max_len: int, d_model: int = 512, dropout: float = 0.1, batch_first: bool = True):
+        super().__init__()
         self.batch_first = batch_first
 
         position = torch.arange(0, max_len).unsqueeze(1)
@@ -27,7 +43,8 @@ class PositionalEncoding(nn.Module):
         index = 0 if self.batch_first else 1
         pos_embedding = pos_embedding.unsqueeze(index)
         self.dropout = nn.Dropout(dropout)
-        # pos_embedding被通过register_buffer方法注册为一个缓冲，而不是模型的可学习参数。
+        # The pos_embedding is registered as a buffer through the register_buffer method,
+        # rather than being a learnable parameter of the model.
         self.register_buffer('pos_embedding', pos_embedding)
 
     def forward(self, x: Tensor):
@@ -39,16 +56,15 @@ class PositionalEncoding(nn.Module):
 
 class ScaleDotProductAttention(nn.Module):
     def __init__(self):
-        super(ScaleDotProductAttention, self).__init__()
+        super().__init__()
 
     @staticmethod
-    def forward(q: Tensor, k: Tensor, v: Tensor, mask=None):
+    def forward(q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None):
         # q, k, v: [batch_size, n_head, seq_len, d_tensor]
         # and n_head * d_tensor = d_model
         # mask = [seq_len, seq_len]
         score = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(k.size(-1), dtype=torch.float32))
         if mask is not None:
-            # score = score.masked_fill(mask != 0, -1e9)
             score += mask
         attention_weights = torch.softmax(score, dim=-1)
         attended_values = torch.matmul(attention_weights, v)
@@ -57,51 +73,33 @@ class ScaleDotProductAttention(nn.Module):
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_model: int, n_head: int):
-        super(MultiHeadAttention, self).__init__()
+        super().__init__()
         assert d_model % n_head == 0, "d_model must be divisible by num_heads"
         self.n_head = n_head
+        self.d_tensor = d_model // n_head
+
         self.attention = ScaleDotProductAttention()
         self.w_q = nn.Linear(d_model, d_model)
         self.w_k = nn.Linear(d_model, d_model)
         self.w_v = nn.Linear(d_model, d_model)
         self.fc = nn.Linear(d_model, d_model)
 
-    def split(self, x: Tensor):
-        """
-        split tensor by number of head
-        :param x: [batch_size, seq_len, d_model]
-        :return: [batch_size, head, seq_len, d_tensor]
-        """
-        batch_size, length, d_model = x.size()
-        d_tensor = d_model // self.n_head
-        x = x.view(batch_size, length, self.n_head, d_tensor).transpose(1, 2)
-        return x
-
-    @staticmethod
-    def concat(x: Tensor):
-        """
-        inverse function of self.split(tensor : torch.Tensor)
-        :param x: [batch_size, head, length, d_tensor]
-        :return: [batch_size, length, d_model]
-        """
-        batch_size, n_head, length, d_tensor = x.size()
-        d_model = n_head * d_tensor
-        x = x.transpose(1, 2).contiguous().view(batch_size, length, d_model)
-        return x
-
-    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask=None):
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None):
         # q, k, v: [batch_size, seq_len, d_model]
+        batch_size, seq_len, d_model = q.size()
         q, k, v = self.w_q(q), self.w_k(k), self.w_v(v)
-        q, k, v = self.split(q), self.split(k), self.split(v)
+        q = q.view(batch_size, seq_len, self.n_head, self.d_tensor).transpose(1, 2)
+        k = k.view(batch_size, seq_len, self.n_head, self.d_tensor).transpose(1, 2)
+        v = v.view(batch_size, seq_len, self.n_head, self.d_tensor).transpose(1, 2)
         out, attention = self.attention(q, k, v, mask=mask)
-        out = self.concat(out)
+        out = out.transpose(1, 2).contiguous().view(batch_size, seq_len, d_model)
 
         return self.fc(out)
 
 
 class FeedForward(nn.Module):
     def __init__(self, dim_feedforward: int, d_model: int, dropout: float = 0.1):
-        super(FeedForward, self).__init__()
+        super().__init__()
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.linear2 = nn.Linear(dim_feedforward, d_model)
         self.relu = nn.ReLU()
@@ -117,7 +115,7 @@ class FeedForward(nn.Module):
 
 class EncoderLayer(nn.Module):
     def __init__(self, d_model: int, dim_feedforward: int, n_head: int, dropout: float):
-        super(EncoderLayer, self).__init__()
+        super().__init__()
         self.attention = MultiHeadAttention(d_model=d_model, n_head=n_head)
         self.norm1 = nn.LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
@@ -126,14 +124,9 @@ class EncoderLayer(nn.Module):
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout2 = nn.Dropout(dropout)
 
-    def forward(self, x, src_mask):
-        _x = x
-        x = self.dropout1(self.attention(q=x, k=x, v=x, mask=src_mask))
-        x = self.norm1(x + _x)
-
-        _x = x
-        x = self.dropout2(self.ffn(x))
-        x = self.norm2(x + _x)
+    def forward(self, x: Tensor, src_mask: Optional[Tensor] = None):
+        x = self.norm1(x + self.dropout1(self.attention(q=x, k=x, v=x, mask=src_mask)))
+        x = self.norm2(x + self.dropout2(self.ffn(x)))
         return x
 
 
@@ -153,30 +146,22 @@ class DecoderLayer(nn.Module):
         self.norm3 = nn.LayerNorm(d_model)
         self.dropout3 = nn.Dropout(dropout)
 
-    def forward(self, tgt, memory, trg_mask):
-        _x = tgt
-        x = self.dropout1(self.self_attention(q=tgt, k=tgt, v=tgt, mask=trg_mask))
-        x = self.norm1(x + _x)
-
-        _x = x
+    def forward(self, tgt: Tensor, memory: Tensor, trg_mask: Tensor):
+        x = self.norm1(tgt + self.dropout1(self.self_attention(q=tgt, k=tgt, v=tgt, mask=trg_mask)))
         # memory_mask: (T, S). 我看一般实现是加src_mask，但我觉得不用，加了也是memory_mask
-        x = self.dropout2(self.cross_attention(q=x, k=memory, v=memory, mask=None))
-        x = self.norm2(x + _x)
-
-        _x = x
-        x = self.dropout3(self.ffn(x))
-        x = self.norm3(x + _x)
+        x = self.norm2(x + self.dropout2(self.cross_attention(q=x, k=memory, v=memory, mask=None)))
+        x = self.norm3(x + self.dropout3(self.ffn(x)))
         return x
 
 
 class TransformerScratch(nn.Module):
-
     def __init__(self, num_encoder_layers: int,
                  num_decoder_layers: int,
                  d_model: int,
                  n_head: int,
                  src_vocab_size: int,
                  tgt_vocab_size: int,
+                 max_seq_len: int = 100,
                  dim_feedforward: int = 512,
                  dropout: float = 0.1,
                  batch_first=True):
@@ -184,18 +169,22 @@ class TransformerScratch(nn.Module):
         assert batch_first, "must batch first"
         self.src_tok_emb = TokenEmbedding(src_vocab_size, d_model)
         self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, d_model)
-        self.positional_encoding = PositionalEncoding(100, d_model, dropout=dropout, batch_first=batch_first)
-        self.encoder_layers = nn.ModuleList([EncoderLayer(d_model=d_model,
-                                                          dim_feedforward=dim_feedforward,
-                                                          n_head=n_head,
-                                                          dropout=dropout)
-                                             for _ in range(num_encoder_layers)])
+        self.positional_encoding = PositionalEncoding(max_seq_len, d_model, dropout=dropout, batch_first=batch_first)
+        self.encoder_layers = nn.ModuleList(
+            [EncoderLayer(d_model=d_model,
+                          dim_feedforward=dim_feedforward,
+                          n_head=n_head,
+                          dropout=dropout)
+             for _ in range(num_encoder_layers)]
+        )
 
-        self.decoder_layers = nn.ModuleList([DecoderLayer(d_model=d_model,
-                                                          dim_feedforward=dim_feedforward,
-                                                          n_head=n_head,
-                                                          dropout=dropout)
-                                             for _ in range(num_decoder_layers)])
+        self.decoder_layers = nn.ModuleList(
+            [DecoderLayer(d_model=d_model,
+                          dim_feedforward=dim_feedforward,
+                          n_head=n_head,
+                          dropout=dropout)
+             for _ in range(num_decoder_layers)]
+        )
         self.generator = nn.Linear(d_model, tgt_vocab_size)
 
     def initialize(self):
@@ -229,6 +218,7 @@ class TransformerTorch(nn.Module):
                  n_head: int,
                  src_vocab_size: int,
                  tgt_vocab_size: int,
+                 max_seq_len: int = 100,
                  dim_feedforward: int = 512,
                  dropout: float = 0.1,
                  batch_first=True):
@@ -243,7 +233,7 @@ class TransformerTorch(nn.Module):
         self.generator = nn.Linear(d_model, tgt_vocab_size)
         self.src_tok_emb = TokenEmbedding(src_vocab_size, d_model)
         self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, d_model)
-        self.positional_encoding = PositionalEncoding(100, d_model, dropout=dropout, batch_first=batch_first)
+        self.positional_encoding = PositionalEncoding(max_seq_len, d_model, dropout=dropout, batch_first=batch_first)
         self.initialize()
 
     def initialize(self):

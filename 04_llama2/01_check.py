@@ -130,6 +130,11 @@ def check_kv_cache():
 def check_feed_forward():
     args = ModelArgs()
     ffn = FeedForward(args)
+    dim = 4096
+    multiple_of = 256
+    hidden_dim = int(2 * 4 * dim / 3)
+    hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
+    print(hidden_dim)
     print(ffn.w1)
 
 
@@ -171,8 +176,6 @@ def check_model_and_loss():
         n_layers=N_LAYER,
         n_heads=N_HEAD,
         vocab_size=VOCAB_SIZE,
-        multiple_of=16,
-        norm_eps=1e-5,
         device=DEVICE
     )
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-1)

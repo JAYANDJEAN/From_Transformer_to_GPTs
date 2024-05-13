@@ -13,34 +13,25 @@ import os
 
 def init_model(config):
     # 模型定义
+    model_args: ModelArgs = ModelArgs(
+        dim=config['dim'],
+        n_layers=config['n_layers'],
+        n_heads=config['n_heads'],
+        n_kv_heads=config['n_heads'],
+        vocab_size=config['vocab_size'],
+        max_seq_len=config['max_seq_len'],
+        use_cache=False,
+        device=config['device']
+    )
+
     if config['init_from'] == "scratch":
         print("Initializing a new model from scratch")
-        model_args: ModelArgs = ModelArgs(
-            dim=config['dim'],
-            n_layers=config['n_layers'],
-            n_heads=config['n_heads'],
-            n_kv_heads=config['n_heads'],
-            vocab_size=config['vocab_size'],
-            max_seq_len=config['max_seq_len'],
-            use_cache=False,
-            device=config['device']
-        )
         model = LlamaModel(model_args)
     elif config['init_from'] == "resume":
         print(f"Resuming training from {config['out_dir']}")
         # resume training from a checkpoint.
         ckpt_path = os.path.join(config['out_dir'], "pretrain/best.pt")
         checkpoint = torch.load(ckpt_path)
-        model_args: ModelArgs = ModelArgs(
-            dim=config['dim'],
-            n_layers=config['n_layers'],
-            n_heads=config['n_heads'],
-            n_kv_heads=config['n_heads'],
-            vocab_size=config['vocab_size'],
-            max_seq_len=config['max_seq_len'],
-            use_cache=False,
-            device=config['device']
-        )
         model = LlamaModel(model_args)
         state_dict = checkpoint["model"]
         # fix the keys of the state dictionary :(
@@ -50,8 +41,6 @@ def init_model(config):
             if k.startswith(unwanted_prefix):
                 state_dict[k[len(unwanted_prefix):]] = state_dict.pop(k)
         model.load_state_dict(state_dict)
-        # iter_num = checkpoint["iter_num"]
-        # best_val_loss = checkpoint["best_val_loss"]
     else:
         model = None
     model = model.to(config['device'])
