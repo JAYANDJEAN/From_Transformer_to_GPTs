@@ -189,6 +189,78 @@ def check_model_and_loss():
     print(loss)
 
 
+def check_sliding_window_attention():
+    print_order = ['the', 'cat', 'is', 'on', 'a', 'chair']
+    sequence = [{print_order[i]} for i in range(len(print_order))]
+    sliding_window_size = 3
+
+    def sliding_window_attention(seq: list[set[str]], w: int):
+        seq_len = len(seq)
+        attention_scores: list[list[set]] = [[None for _ in range(seq_len)] for _ in range(seq_len)]
+        for i, q_tokens_set in enumerate(seq):
+            for j, k_tokens_set in enumerate(seq):
+                # The upper triangle is all None
+                if j > i:
+                    continue
+                # Each token can only attend to the previous W tokens
+                if i - j >= w:
+                    continue
+
+                attention = set()
+                # Add all tokens from q_tokens_set to attention_result
+                attention.update(q_tokens_set)
+                # Add all tokens from k_tokens_set to attention_resul
+                attention.update(k_tokens_set)
+
+                attention_scores[i][j] = attention
+        return attention_scores
+
+    def multiple_by_v(attention_scores: list[list[set]], v_sequence: list[set[str]]) -> list[set[str]]:
+        seq_len = len(v_sequence)
+        result = [set() for _ in range(seq_len)]
+        for i in range(seq_len):
+            for j in range(seq_len):
+                attention = attention_scores[i][j]
+                v = v_sequence[j]
+                r = result[i]
+                # Add all the tokens in the attention (if not None) to r
+                if attention is not None:
+                    # Add all the tokens in v to r
+                    r.update(v)
+                    r.update(attention)
+        return result
+
+    def print_attention(attention_scores: list[list[set[str]]]):
+        for i, row in enumerate(attention_scores):
+            for j, attention in enumerate(row):
+                if attention is None:
+                    print('None', end='\t')
+                else:
+                    print(f'{sorted(attention, key=lambda x: print_order.index(x))}', end='\t')
+            print()
+
+    def print_sequence(seq: list[set[str]]):
+        for i, tokens_set in enumerate(seq):
+            print(f'{i}: {sorted(tokens_set, key=lambda x: print_order.index(x))}')
+
+    def print_layer(input: list[set[str]], layer_num: int) -> list[set[str]]:
+        print(f'Layer {layer_num} input:')
+        print_sequence(input)
+        attention_scores = sliding_window_attention(input, sliding_window_size)
+        print()
+        print(f'Layer {layer_num} attention scores:')
+        print_attention(attention_scores)
+        output = multiple_by_v(attention_scores, input)
+        print()
+        print(f'Layer {layer_num} output:')
+        print_sequence(output)
+        return output
+
+    output_layer_1 = print_layer(sequence, 1)
+    output_layer_2 = print_layer(output_layer_1, 2)
+    output_layer_3 = print_layer(output_layer_2, 3)
+
+
 if __name__ == '__main__':
     VOCAB_SIZE = 32000
     SEQ_LEN = 23
