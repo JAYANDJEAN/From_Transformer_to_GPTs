@@ -51,9 +51,9 @@ def prepare_dataset(batch_size: int):
         for src_sample, tgt_sample in batch:
             src_batch.append(func_t2i[src_lang](src_sample.rstrip("\n")))
             tgt_batch.append(func_t2i[tgt_lang](tgt_sample.rstrip("\n")))
-        # pad_sequence 因为是rnn的方法，所以默认是batch在后，这里把他转回来就行
-        src_batch = pad_sequence(src_batch, padding_value=SPECIAL_IDS['<pad>']).transpose(0, 1)
-        tgt_batch = pad_sequence(tgt_batch, padding_value=SPECIAL_IDS['<pad>']).transpose(0, 1)
+        # batch_first 要 true
+        src_batch = pad_sequence(src_batch, padding_value=SPECIAL_IDS['<pad>'], batch_first=True)
+        tgt_batch = pad_sequence(tgt_batch, padding_value=SPECIAL_IDS['<pad>'], batch_first=True)
         return src_batch, tgt_batch
 
     # 从训练集里抽取字典和文本转int的方法。
@@ -112,4 +112,3 @@ def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, 
 def bleu():
     # todo
     pass
-
