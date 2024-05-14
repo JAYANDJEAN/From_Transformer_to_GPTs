@@ -2,19 +2,24 @@ from transformers import RobertaTokenizer, RobertaModel
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
+from modelsummary import summary
+import torch
 
 model_name = 'distilroberta-base'
 tokenizer = RobertaTokenizer.from_pretrained(model_name)
 model = RobertaModel.from_pretrained(model_name)
 eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
-batch_size = 64
+BATCH_SIZE = 64
+SRC_SEQ_LEN = 17
 
 
 def check_model():
     print('=================model=======================')
-    print(model)
-    for name, param in model.named_parameters():
-        print(f'{name}: requires_grad={param.requires_grad}')
+    src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SRC_SEQ_LEN), dtype=torch.int)
+    mask = torch.randn(size=(BATCH_SIZE, SRC_SEQ_LEN))
+    summary(model, src, mask, show_input=True)
+    # for name, param in model.named_parameters():
+    #     print(f'{name}: requires_grad={param.requires_grad}')
     print("Total trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     print('-------------freeze---------------')
@@ -22,8 +27,6 @@ def check_model():
         param.requires_grad = False
     for param in model.encoder.layer[0:4].parameters():
         param.requires_grad = False
-    for name, param in model.named_parameters():
-        print(f'{name}: requires_grad={param.requires_grad}')
     print("Total trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
 
@@ -44,7 +47,7 @@ def check_forward():
     print(encode['input_ids'])
     print(tokenizer.decode(encode['input_ids'].squeeze()))
 
-    train_dataloader = DataLoader(eli5, batch_size=batch_size, collate_fn=collate_fn)
+    train_dataloader = DataLoader(eli5, batch_size=BATCH_SIZE, collate_fn=collate_fn)
     _, (src, src_mask) = next(enumerate(train_dataloader))
     # 展示第一条结果，应该和上面的encode结果是一样的
     print(src[0, :])
@@ -63,4 +66,4 @@ def check_forward():
 
 
 if __name__ == '__main__':
-    check_forward()
+    check_model()
