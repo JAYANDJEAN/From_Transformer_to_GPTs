@@ -1,19 +1,17 @@
 from transformers import RobertaTokenizer, RobertaModel
-from datasets import load_dataset
-from torch.utils.data import DataLoader
-from torch.nn.utils.rnn import pad_sequence
 from modelsummary import summary
 import torch
+from utils import prepare_loader_from_set, prepare_loader_from_file
 
-model_name = 'distilroberta-base'
+model_name = "distilbert/distilroberta-base"
 tokenizer = RobertaTokenizer.from_pretrained(model_name)
 model = RobertaModel.from_pretrained(model_name)
-eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
+
 BATCH_SIZE = 64
 SRC_SEQ_LEN = 17
 
 
-def check_model():
+def check_mlm_model():
     print('=================model=======================')
     src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SRC_SEQ_LEN), dtype=torch.int)
     mask = torch.randn(size=(BATCH_SIZE, SRC_SEQ_LEN))
@@ -30,16 +28,7 @@ def check_model():
     print("Total trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
 
-def check_forward():
-    def collate_fn(batch):
-        res = []
-        for sample in batch:
-            encoded_input = tokenizer(sample['title'], return_tensors='pt')
-            res.append(encoded_input['input_ids'].squeeze())
-        res_batch = pad_sequence(res, padding_value=tokenizer.pad_token_id, batch_first=True)
-        mask = (res_batch != tokenizer.pad_token_id).int()
-        return res_batch, mask
-
+def check_mlm_forward():
     print('=================tokenizer=======================')
     # encode/decode one sentence
     text = "Why there was a 'leap second' added to the end of 2016?"
@@ -47,7 +36,7 @@ def check_forward():
     print(encode['input_ids'])
     print(tokenizer.decode(encode['input_ids'].squeeze()))
 
-    train_dataloader = DataLoader(eli5, batch_size=BATCH_SIZE, collate_fn=collate_fn)
+    train_dataloader, _ = prepare_loader_from_set(BATCH_SIZE, tokenizer)
     _, (src, src_mask) = next(enumerate(train_dataloader))
     # 展示第一条结果，应该和上面的encode结果是一样的
     print(src[0, :])
@@ -65,5 +54,26 @@ def check_forward():
     print(pooler_output[0, :10])
 
 
+def check_custom_data():
+    csv_file = '../00_assets/csv/addr_to_geo_min.csv'
+    columns = ['address', 's2']
+    special_tokens = {
+        tokenizer.unk_token_id: tokenizer.unk_token,
+        tokenizer.pad_token_id: tokenizer.pad_token,
+        tokenizer.bos_token_id: tokenizer.bos_token,
+        tokenizer.eos_token_id: tokenizer.eos_token
+    }
+    tgt_vocab = {4: '5', 5: 'a', 6: 'd', 7: '0', 8: '1', 9: '7', 10: '9', 11: '2', 12: 'f', 13: '3', 14: 'b',
+                 15: 'e', 16: '8', 17: '6', 18: 'c', 19: '4'}
+    tgt_vocab.update(special_tokens)
+    reversed_vocab = {v: k for k, v in tgt_vocab.items()}
+    train_dataloader, _, _ = prepare_loader_from_file(BATCH_SIZE, tokenizer, csv_file, columns, reversed_vocab)
+    _, (src, src_mask, tgt) = next(enumerate(train_dataloader))
+    # 展示第一条结果
+    print(src[0, :])
+    print(src_mask[0, :])
+    print(tgt[0, :])
+
+
 if __name__ == '__main__':
-    check_model()
+    check_custom_data()
