@@ -4,7 +4,7 @@ from tqdm import tqdm
 import yaml
 import sys
 from utils import prepare_loader_from_file, generate_mask, generate
-from models import Seq2Seq_Pre_Encode
+from models import Seq2Seq_Pre_Encode, TransformerTorch
 from transformers import AutoTokenizer
 import warnings
 
@@ -24,7 +24,17 @@ def train_op(params):
             tgt_input = tgt[:, :-1].to(DEVICE)
             tgt_out = tgt[:, 1:].to(DEVICE)
             tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
-            tgt_predict = model(src, src_mask, tgt_input, tgt_mask)
+            src_padding_mask = (src == tokenizer.pad_token_id).to(DEVICE)
+            tgt_padding_mask = (tgt_input == tokenizer.pad_token_id).to(DEVICE)
+
+            if params['model_name'] == 'scratch':
+                src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
+                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
+                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
+            else:
+                src_mask = src_mask.to(DEVICE)
+                tgt_predict = model(src, src_mask, tgt_input, tgt_mask)
+
             if tp == 'train':
                 optimizer.zero_grad()
                 loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
@@ -38,9 +48,14 @@ def train_op(params):
                 pbar.update(1)
         return losses / len(list(dataloader))
 
-    model_name = "distilbert/distilroberta-base"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # model_name = "distilbert/distilroberta-base"
     geo_code_type = params['geo_code_type']
+    DEVICE = params['device']
+    BATCH_SIZE = params['batch_size']
+    model_name = params['model_name']
+
+    tokenizer = AutoTokenizer.from_pretrained("distilbert/distilroberta-base")
+
     assert geo_code_type in ('s2', 'geohash')
     columns = ['address', geo_code_type]
     special_tokens = {
@@ -59,16 +74,28 @@ def train_op(params):
     reversed_vocab = {v: k for k, v in tgt_vocab.items()}
 
     tgt_size = len(tgt_vocab)
-    DEVICE = params['device']
-    BATCH_SIZE = params['batch_size']
-    transformer = Seq2Seq_Pre_Encode(model_path=model_name, tgt_vocab_size=tgt_size).to(DEVICE)
+    src_size = tokenizer.vocab_size
+
+    if model_name == 'scratch':
+        transformer = TransformerTorch(num_encoder_layers=params['num_encode'],
+                                       num_decoder_layers=params['num_decode'],
+                                       d_model=params['d_model'],
+                                       n_head=params['n_head'],
+                                       src_vocab_size=src_size,
+                                       tgt_vocab_size=tgt_size
+                                       ).to(DEVICE)
+    else:
+        transformer = Seq2Seq_Pre_Encode(model_path=model_name, tgt_vocab_size=tgt_size).to(DEVICE)
 
     csv_file = '../00_assets/csv/addr_to_geo_min.csv'
     train_loader, val_loader, test_loader = prepare_loader_from_file(
         BATCH_SIZE, tokenizer, csv_file, columns, reversed_vocab
     )
 
-    optimizer = torch.optim.AdamW(transformer.parameters())
+    optimizer = torch.optim.Adam(transformer.parameters(),
+                                 lr=params['lr'],
+                                 betas=eval(params['betas']),
+                                 eps=eval(params['eps']))
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
     min_train_loss = float('inf')

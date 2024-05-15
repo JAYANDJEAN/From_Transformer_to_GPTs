@@ -76,4 +76,4 @@ def check_custom_data():
 
 
 if __name__ == '__main__':
-    check_custom_data()
+    check_mlm_model()

@@ -1,6 +1,6 @@
 model_version: v1
 geo_code_type: geohash
-model_name: roberta-base
+model_name: scratch
 num_epochs: 10
 batch_size: 128
 num_encode: 3

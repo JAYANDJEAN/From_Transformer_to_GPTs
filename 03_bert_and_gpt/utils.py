@@ -108,11 +108,12 @@ def generate(model, tokenizer, dataloader, tgt_vocab, params):
         return ''.join([tgt_vocab.get(val, '-') for val in int_array])
 
     model.eval()
-    predict = []
-    ground_true = []
+    res_pred = []
+    res_true = []
     device = params['device']
     for src, src_mask, tgt in dataloader:
         src = src.to(device)
+        src_mask = torch.zeros((src.shape[1], src.shape[1])) if params['model_name'] == 'scratch' else src_mask
         src_mask = src_mask.to(device)
         batch_size, _ = src.shape
         memory = model.encode(src, src_mask).to(device)
@@ -127,10 +128,10 @@ def generate(model, tokenizer, dataloader, tgt_vocab, params):
 
         predict = ys[:, 1:-1].cpu().numpy()
         tgt = tgt[:, 1:-1].cpu().numpy()
-        predict.append(np.apply_along_axis(int_to_string, axis=1, arr=predict))
-        ground_true.append(np.apply_along_axis(int_to_string, axis=1, arr=tgt))
+        res_pred.append(np.apply_along_axis(int_to_string, axis=1, arr=predict))
+        res_true.append(np.apply_along_axis(int_to_string, axis=1, arr=tgt))
 
-    concat_pred = np.concatenate(predict)
-    concat_true = np.concatenate(ground_true)
+    concat_pred = np.concatenate(res_pred)
+    concat_true = np.concatenate(res_true)
     df = pd.DataFrame({'geo_true': concat_true, 'geo_pred': concat_pred})
     df.to_csv('addr_to_gh_predict_' + params['model_version'] + '.csv', index=False)
