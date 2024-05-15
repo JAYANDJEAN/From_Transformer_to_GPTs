@@ -1,7 +1,7 @@
 import torch
 from timeit import default_timer as timer
 from models import TransformerTorch, TransformerScratch
-from utils import generate_mask, prepare_dataset, translate, SPECIAL_IDS, src_lang, tgt_lang
+from utils import generate_mask, prepare_dataset, generate, SPECIAL_IDS, src_lang, tgt_lang
 from tqdm import tqdm
 import warnings
 import yaml
@@ -106,7 +106,7 @@ def train_and_translate(parameters):
 
     src_sentence = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
     transformer.load_state_dict(torch.load(model_path))
-    print("Translated sentence:", translate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
+    print("Translated sentence:", generate(transformer, src_sentence, text_to_indices, vocabs, DEVICE))
 
 
 with open('../00_assets/yml/translation.yml', 'r') as file:

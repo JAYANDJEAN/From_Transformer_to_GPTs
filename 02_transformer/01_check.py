@@ -5,7 +5,7 @@ from modelsummary import summary
 from models import (PositionalEncoding, ScaleDotProductAttention,
                     MultiHeadAttention, EncoderLayer, DecoderLayer,
                     TransformerScratch, TransformerTorch)
-from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang, translate
+from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang, generate
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -236,7 +236,7 @@ def check_translate():
                                    tgt_vocab_size=len(voc[tgt_lang])
                                    ).to('cpu')
 
-    print("Translated sentence:", translate(transformer, src_, t2i, voc, 'cpu'))
+    print("Translated sentence:", generate(transformer, src_, t2i, voc, 'cpu'))
 
 
 if __name__ == '__main__':

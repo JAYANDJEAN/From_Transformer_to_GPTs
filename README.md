@@ -17,9 +17,10 @@
    2. https://pytorch.org/tutorials/beginner/translation_transformer.html
    3. https://nlp.seas.harvard.edu/annotated-transformer/
 
-### 3、T5
+### 3、Bert and GPT
 
-1. 了解encoder-decoder架构的T5，并fine-tune。
+1. 了解huggingface提供的多种Bert变体。了解bert和gpt的fine-tune。了解transformers的Trainer。
+2. 为已经pre-train的encoder添加一个未训练的decoder，实现generate。
 
 ### 4、LLaMa
 

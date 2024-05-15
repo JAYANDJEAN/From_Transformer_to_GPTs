@@ -49,7 +49,7 @@ def init_model(config):
     return model
 
 
-class LlamaForCompletion:
+class LlamaForCausal:
     def __init__(self, checkpoints_dir: str, tokenizer_path: str, tokenizer_tp: str,
                  max_batch_size: int, max_seq_len: int = 2048, device: str = 'cpu'):
         checkpoints = sorted(Path(checkpoints_dir).glob("*.pth"))
@@ -86,8 +86,8 @@ class LlamaForCompletion:
         self.model.load_state_dict(checkpoint, strict=True)
         print(f"Loaded state dict in {time.time() - prev_time:.2f}s")
 
-    def completion(self, prompts: List[str], temperature: float = 0.6, top_p: float = 0.9,
-                   max_gen_len: Optional[int] = None):
+    def generate(self, prompts: List[str], temperature: float = 0.6, top_p: float = 0.9,
+                 max_gen_len: Optional[int] = None):
         if max_gen_len is None:
             max_gen_len = self.args.max_seq_len - 1
         # Convert each prompt into tokens

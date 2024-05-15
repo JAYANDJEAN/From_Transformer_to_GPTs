@@ -80,7 +80,7 @@ def generate_mask(sz: int):
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
-def translate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, vocabs: Dict, device):
+def generate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, vocabs: Dict, device):
     model.eval()
     # 处理的数据必须是 batch_first=True，模型也是
     # torch.Size([seq_len]) 转成 torch.Size([1, seq_len])

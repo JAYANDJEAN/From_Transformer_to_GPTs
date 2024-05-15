@@ -1,4 +1,4 @@
-from utils import LlamaForCompletion
+from utils import LlamaForCausal
 from transformers import AutoTokenizer, LlamaForCausalLM
 import torch
 import json
@@ -23,7 +23,7 @@ if model_type == 'hf':
         print(tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0])
         print('-' * 40)
 elif model_type == '7b':
-    model = LlamaForCompletion(
+    model = LlamaForCausal(
         checkpoints_dir=config['model_path'] + 'Llama-2-7b/',
         tokenizer_path=config['model_path'] + 'Llama-2-7b/tokenizer.model',
         tokenizer_tp='SPP',
@@ -31,13 +31,13 @@ elif model_type == '7b':
         max_seq_len=1024,
         device=device
     )
-    out_tokens, out_texts = (model.completion(prompts, max_gen_len=64))
+    out_tokens, out_texts = (model.generate(prompts, max_gen_len=64))
     assert len(out_texts) == len(prompts)
     for i in range(len(out_texts)):
         print(out_texts[i])
         print('-' * 40)
 elif model_type == 'tiny':
-    model = LlamaForCompletion(
+    model = LlamaForCausal(
         checkpoints_dir='../00_assets/pretrain/',
         tokenizer_path='./chatglm_tokenizer/tokenizer.model',
         tokenizer_tp='GLM',
@@ -47,7 +47,7 @@ elif model_type == 'tiny':
     )
     sentence = ["今天天气不错啊！"]
     # ，门牌编号为香港黄大仙区竹园大成街8号，为一个公园中的公园，入口设于东头村道及大成街。
-    out_tokens, out_texts = (model.completion(sentence, max_gen_len=64))
+    out_tokens, out_texts = (model.generate(sentence, max_gen_len=64))
     assert len(out_texts) == len(sentence)
     for i in range(len(out_texts)):
         print(out_texts[i])

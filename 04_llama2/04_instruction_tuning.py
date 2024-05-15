@@ -1,15 +1,11 @@
 import pandas as pd
-
 from torch.utils.data import Dataset
-
 import json
 import numpy as np
 from tqdm import tqdm
 from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 from timeit import default_timer as timer
 from utils import init_model
-
-from torch.utils.data import Dataset
 import torch
 import os
 import yaml
