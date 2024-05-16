@@ -37,12 +37,10 @@ def train_op(config):
                 pbar.update(1)
         return losses / len(list(dataloader))
 
-    # model_name = "distilbert/distilroberta-base"
     geo_code_type = config['geo_code_type']
     device = config['device']
     batch_size = config['batch_size']
-    model_name = config['model_name']
-    csv_file = '../00_assets/csv/addr_to_geo_min.csv'
+    csv_file = config['csv_file']
     model_id = "distilbert/distilroberta-base"
     save_path = f"../00_assets/best_{config['model_version']}.pth"
 
@@ -69,14 +67,13 @@ def train_op(config):
 
     transformer = Seq2Seq_Pre_Encode(model_id, len(tgt_vocab)).to(device)
     train_loader, val_loader, test_loader = prepare_loader_from_file(
-        batch_size, tokenizer, csv_file, columns, reversed_vocab
+        batch_size, tokenizer, reversed_vocab, csv_file, columns
     )
     optimizer = torch.optim.Adam(transformer.parameters(),
                                  lr=config['lr'],
-                                 betas=eval(config['betas']),
-                                 eps=eval(config['eps']))
+                                 betas=(config['beta_min'], config['beta_max']),
+                                 eps=config['eps'])
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
-
     min_train_loss = float('inf')
 
     print("Total parameters:", sum(p.numel() for p in transformer.parameters() if p.requires_grad))
@@ -102,8 +99,7 @@ def train_op(config):
     generate(transformer, tokenizer, test_loader, tgt_vocab, config)
 
 
-version = 'v1'
-with open('../00_assets/yml/' + version + '.yml', 'r') as file:
+with open('../00_assets/yml/ft_encode_decode.yml', 'r') as file:
     configs = yaml.safe_load(file)
     print(configs)
 

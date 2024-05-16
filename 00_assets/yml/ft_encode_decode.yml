@@ -1,10 +1,8 @@
 model_version: v1
-csv_file: ..
-geo_code_type: geohash
-
-num_epochs: 10
+csv_file: ../00_assets/csv/addr_to_geo_min.csv
+geo_code_type: s2
+num_epochs: 2
 batch_size: 128
-
 lr: 0.0001
 beta_min: 0.9
 beta_max: 0.98

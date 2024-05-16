@@ -133,4 +133,4 @@ def generate(model, tokenizer, dataloader, tgt_vocab, config):
     concat_pred = np.concatenate(res_pred)
     concat_true = np.concatenate(res_true)
     df = pd.DataFrame({'geo_true': concat_true, 'geo_pred': concat_pred})
-    df.to_csv(f"result_{config['model_version']}.csv", index=False)
+    df.to_csv(f"../00_assets/csv/result_{config['model_version']}.csv", index=False)
