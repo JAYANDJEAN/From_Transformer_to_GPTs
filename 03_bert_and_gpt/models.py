@@ -27,10 +27,10 @@ class PositionalEncoding(nn.Module):
 
 
 class Seq2Seq_Pre_Encode(nn.Module):
-    def __init__(self, model_path, tgt_vocab_size, n_layers=2, n_heads=4, dropout_rate=0.1):
+    def __init__(self, model_id, tgt_vocab_size, n_layers=2, n_heads=4, dropout_rate=0.1):
         super(Seq2Seq_Pre_Encode, self).__init__()
 
-        self.encoder = AutoModel.from_pretrained(model_path)
+        self.encoder = AutoModel.from_pretrained(model_id)
         config = self.encoder.config.to_dict()
         hidden_size = config['hidden_size']
 
@@ -73,55 +73,3 @@ class Seq2Seq_Pre_Encode(nn.Module):
         tgt_emb = self.positional_encoding(self.tgt_emb(tgt_ids))
         decoder_outputs = self.decoder(tgt=tgt_emb, memory=last_hidden_state, tgt_mask=tgt_mask, memory_mask=None)
         return self.generator(decoder_outputs)
-
-
-class TransformerTorch(nn.Module):
-    def __init__(self,
-                 num_encoder_layers: int,
-                 num_decoder_layers: int,
-                 d_model: int,
-                 n_head: int,
-                 src_vocab_size: int,
-                 tgt_vocab_size: int,
-                 max_seq_len: int = 100,
-                 dim_feedforward: int = 512,
-                 dropout: float = 0.1):
-        super().__init__()
-        self.transformer = nn.Transformer(d_model=d_model,
-                                          nhead=n_head,
-                                          num_encoder_layers=num_encoder_layers,
-                                          num_decoder_layers=num_decoder_layers,
-                                          dim_feedforward=dim_feedforward,
-                                          dropout=dropout,
-                                          batch_first=True)
-        self.generator = nn.Linear(d_model, tgt_vocab_size)
-        self.src_tok_emb = nn.Embedding(src_vocab_size, d_model)
-        self.tgt_tok_emb = nn.Embedding(tgt_vocab_size, d_model)
-        self.positional_encoding = PositionalEncoding(max_seq_len, d_model, dropout=dropout)
-        self.initialize()
-
-    def initialize(self):
-        for para in self.parameters():
-            if para.dim() > 1:
-                nn.init.xavier_uniform_(para)
-
-    def forward(self,
-                src: Tensor,
-                trg: Tensor,
-                src_mask: Tensor,
-                tgt_mask: Tensor,
-                src_padding_mask: Tensor,
-                tgt_padding_mask: Tensor,
-                memory_key_padding_mask: Tensor):
-        src_emb = self.positional_encoding(self.src_tok_emb(src))
-        tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
-        outs = self.transformer(src_emb, tgt_emb, src_mask, tgt_mask, None,
-                                src_padding_mask, tgt_padding_mask,
-                                memory_key_padding_mask)
-        return self.generator(outs)
-
-    def encode(self, src: Tensor, src_mask: Tensor):
-        return self.transformer.encoder(self.positional_encoding(self.src_tok_emb(src)), src_mask)
-
-    def decode(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
-        return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgt_mask)

@@ -1,0 +1,12 @@
+model_version: v1
+csv_file: ..
+geo_code_type: geohash
+
+num_epochs: 10
+batch_size: 128
+
+lr: 0.0001
+beta_min: 0.9
+beta_max: 0.98
+eps: 0.000000001
+device: cpu

@@ -56,7 +56,7 @@ def prepare_loader_from_set(batch_size: int, tokenizer):
     return train_dataloader, test_dataloader
 
 
-def prepare_loader_from_file(batch_size: int, tokenizer, csv_file, columns, reversed_vocab):
+def prepare_loader_from_file(batch_size, src_tokenizer, tgt_vocabs, csv_file, columns):
     # 对于大型文件，使用Dataset，避免一次性加载到内存，处理逻辑依然放在collate_fn，因为需要拿到batch内所有数据
     class CustomDataset(Dataset):
         def __init__(self, file_path, tp, columns_use):
@@ -77,15 +77,15 @@ def prepare_loader_from_file(batch_size: int, tokenizer, csv_file, columns, reve
     def collate_fn(batch):
         addr_batch, geo_batch = [], []
         for addr_sample, geo_sample in batch:
-            encoded_input = tokenizer(addr_sample, return_tensors='pt')
+            encoded_input = src_tokenizer(addr_sample, return_tensors='pt')
             addr_batch.append(encoded_input['input_ids'].squeeze())
-            results = ([tokenizer.bos_token_id] +
-                       [reversed_vocab[char] for char in geo_sample] +
-                       [tokenizer.eos_token_id])
+            results = ([src_tokenizer.bos_token_id] +
+                       [tgt_vocabs[char] for char in geo_sample] +
+                       [src_tokenizer.eos_token_id])
             geo_batch.append(torch.as_tensor(results))
-        src_batch = pad_sequence(addr_batch, padding_value=tokenizer.pad_token_id, batch_first=True)
-        src_mask = (src_batch != tokenizer.pad_token_id).int()
-        tgt_batch = pad_sequence(geo_batch, padding_value=tokenizer.pad_token_id, batch_first=True)
+        src_batch = pad_sequence(addr_batch, padding_value=src_tokenizer.pad_token_id, batch_first=True)
+        src_mask = (src_batch != src_tokenizer.pad_token_id).int()
+        tgt_batch = pad_sequence(geo_batch, padding_value=src_tokenizer.pad_token_id, batch_first=True)
         return src_batch, src_mask, tgt_batch
 
     train_ = DataLoader(CustomDataset(csv_file, 'train', columns),
@@ -103,23 +103,22 @@ def prepare_loader_from_file(batch_size: int, tokenizer, csv_file, columns, reve
     return train_, val_, test_
 
 
-def generate(model, tokenizer, dataloader, tgt_vocab, params):
+def generate(model, tokenizer, dataloader, tgt_vocab, config):
     def int_to_string(int_array):
         return ''.join([tgt_vocab.get(val, '-') for val in int_array])
 
     model.eval()
     res_pred = []
     res_true = []
-    device = params['device']
+    device = config['device']
     for src, src_mask, tgt in dataloader:
+        btz, _ = src.shape
         src = src.to(device)
-        src_mask = torch.zeros((src.shape[1], src.shape[1])) if params['model_name'] == 'scratch' else src_mask
         src_mask = src_mask.to(device)
-        batch_size, _ = src.shape
         memory = model.encode(src, src_mask).to(device)
-        ys = torch.ones(batch_size, 1).fill_(tokenizer.bos_token_id).type(torch.long).to(device)
-
-        for i in range(16):
+        ys = torch.ones(btz, 1).fill_(tokenizer.bos_token_id).type(torch.long).to(device)
+        max_len = 13 if config['geo_code_type'] == 'geohash' else 17
+        for i in range(max_len):
             tgt_mask = (generate_mask(ys.size(1))).to(device)
             out = model.decode(ys, memory, tgt_mask)
             prob = model.generator(out[:, -1, :])
@@ -134,4 +133,4 @@ def generate(model, tokenizer, dataloader, tgt_vocab, params):
     concat_pred = np.concatenate(res_pred)
     concat_true = np.concatenate(res_true)
     df = pd.DataFrame({'geo_true': concat_true, 'geo_pred': concat_pred})
-    df.to_csv('addr_to_gh_predict_' + params['model_version'] + '.csv', index=False)
+    df.to_csv(f"result_{config['model_version']}.csv", index=False)

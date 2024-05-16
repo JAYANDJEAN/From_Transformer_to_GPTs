@@ -2,16 +2,12 @@ from timeit import default_timer as timer
 import torch
 from tqdm import tqdm
 import yaml
-import sys
 from utils import prepare_loader_from_file, generate_mask, generate
-from models import Seq2Seq_Pre_Encode, TransformerTorch
+from models import Seq2Seq_Pre_Encode
 from transformers import AutoTokenizer
-import warnings
-
-args = sys.argv
 
 
-def train_op(params):
+def train_op(config):
     def _epoch(model, dataloader, tp):
         losses = 0
         if tp == 'train':
@@ -20,20 +16,13 @@ def train_op(params):
             model.eval()
 
         for src, src_mask, tgt in dataloader:
-            src = src.to(DEVICE)
-            tgt_input = tgt[:, :-1].to(DEVICE)
-            tgt_out = tgt[:, 1:].to(DEVICE)
-            tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
-            src_padding_mask = (src == tokenizer.pad_token_id).to(DEVICE)
-            tgt_padding_mask = (tgt_input == tokenizer.pad_token_id).to(DEVICE)
+            src = src.to(device)
+            tgt_input = tgt[:, :-1].to(device)
+            tgt_out = tgt[:, 1:].to(device)
+            tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
 
-            if params['model_name'] == 'scratch':
-                src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
-                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
-            else:
-                src_mask = src_mask.to(DEVICE)
-                tgt_predict = model(src, src_mask, tgt_input, tgt_mask)
+            src_mask = src_mask.to(device)
+            tgt_predict = model(src, src_mask, tgt_input, tgt_mask)
 
             if tp == 'train':
                 optimizer.zero_grad()
@@ -49,15 +38,18 @@ def train_op(params):
         return losses / len(list(dataloader))
 
     # model_name = "distilbert/distilroberta-base"
-    geo_code_type = params['geo_code_type']
-    DEVICE = params['device']
-    BATCH_SIZE = params['batch_size']
-    model_name = params['model_name']
-
-    tokenizer = AutoTokenizer.from_pretrained("distilbert/distilroberta-base")
+    geo_code_type = config['geo_code_type']
+    device = config['device']
+    batch_size = config['batch_size']
+    model_name = config['model_name']
+    csv_file = '../00_assets/csv/addr_to_geo_min.csv'
+    model_id = "distilbert/distilroberta-base"
+    save_path = f"../00_assets/best_{config['model_version']}.pth"
 
     assert geo_code_type in ('s2', 'geohash')
     columns = ['address', geo_code_type]
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
     special_tokens = {
         tokenizer.unk_token_id: tokenizer.unk_token,
         tokenizer.pad_token_id: tokenizer.pad_token,
@@ -73,37 +65,23 @@ def train_op(params):
     tgt_vocab.update(special_tokens)
     reversed_vocab = {v: k for k, v in tgt_vocab.items()}
 
-    tgt_size = len(tgt_vocab)
-    src_size = tokenizer.vocab_size
+    # =========================================================== #
 
-    if model_name == 'scratch':
-        transformer = TransformerTorch(num_encoder_layers=params['num_encode'],
-                                       num_decoder_layers=params['num_decode'],
-                                       d_model=params['d_model'],
-                                       n_head=params['n_head'],
-                                       src_vocab_size=src_size,
-                                       tgt_vocab_size=tgt_size
-                                       ).to(DEVICE)
-    else:
-        transformer = Seq2Seq_Pre_Encode(model_path=model_name, tgt_vocab_size=tgt_size).to(DEVICE)
-
-    csv_file = '../00_assets/csv/addr_to_geo_min.csv'
+    transformer = Seq2Seq_Pre_Encode(model_id, len(tgt_vocab)).to(device)
     train_loader, val_loader, test_loader = prepare_loader_from_file(
-        BATCH_SIZE, tokenizer, csv_file, columns, reversed_vocab
+        batch_size, tokenizer, csv_file, columns, reversed_vocab
     )
-
     optimizer = torch.optim.Adam(transformer.parameters(),
-                                 lr=params['lr'],
-                                 betas=eval(params['betas']),
-                                 eps=eval(params['eps']))
+                                 lr=config['lr'],
+                                 betas=eval(config['betas']),
+                                 eps=eval(config['eps']))
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
     min_train_loss = float('inf')
-    save_path = f"../00_assets/best_{params['model_version']}.pth"
 
     print("Total parameters:", sum(p.numel() for p in transformer.parameters() if p.requires_grad))
     print('-------------------train----------------------------')
-    for epoch in range(1, params['num_epochs'] + 1):
+    for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
         with tqdm(total=len(train_loader) + len(val_loader),
                   desc=f'Epoch {epoch}',
@@ -121,12 +99,12 @@ def train_op(params):
 
     print('-------------------inference----------------------------')
     transformer.load_state_dict(torch.load(save_path))
-    generate(transformer, tokenizer, test_loader, tgt_vocab, params)
+    generate(transformer, tokenizer, test_loader, tgt_vocab, config)
 
 
 version = 'v1'
 with open('../00_assets/yml/' + version + '.yml', 'r') as file:
-    config = yaml.safe_load(file)
-    print(config)
+    configs = yaml.safe_load(file)
+    print(configs)
 
-train_op(config)
+train_op(configs)
