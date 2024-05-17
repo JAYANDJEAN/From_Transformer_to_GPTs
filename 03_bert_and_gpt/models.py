@@ -34,6 +34,11 @@ class Seq2Seq_Pre_Encode(nn.Module):
         config = self.encoder.config.to_dict()
         hidden_size = config['hidden_size']
 
+        for param in self.encoder.embeddings.parameters():
+            param.requires_grad = False
+        for param in self.encoder.encoder.layer[0:-2].parameters():
+            param.requires_grad = False
+
         self.decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(
                 d_model=hidden_size,

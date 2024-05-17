@@ -5,6 +5,7 @@ import evaluate
 import numpy as np
 from utils import prepare_dataset_books
 
+# T5本身就是encode+decode，所以ft不需要改变模型结构，只要加自有数据进来就行。
 checkpoint = "google-t5/t5-small"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
