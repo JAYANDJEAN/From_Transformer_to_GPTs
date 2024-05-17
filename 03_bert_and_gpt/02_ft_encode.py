@@ -1,12 +1,12 @@
 import math
-from utils import prepare_dataset
+from utils import prepare_dataset_eli5
 from transformers import (AutoTokenizer, AutoModelForCausalLM,
                           TrainingArguments, Trainer, DataCollatorForLanguageModeling)
 
 model_name = "distilbert/distilroberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
-lm_dataset = prepare_dataset(128, tokenizer)
+lm_dataset = prepare_dataset_eli5(128, tokenizer)
 tokenizer.pad_token = tokenizer.eos_token
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
 

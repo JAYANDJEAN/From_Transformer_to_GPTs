@@ -11,7 +11,7 @@ torch.manual_seed(0)
 with open('../00_assets/yml/local_settings.yml', 'r') as file:
     config = yaml.safe_load(file)
 device = "cpu"  # 目前m3 max上的cpu可跑，还未测试cuda，mps报错，未细看
-model_type = '7b'  # '7b', 'hf'
+model_type = 'tiny'  # '7b', 'hf'
 
 # 两种生成出来的还是有些不一样的，我也没查具体原因。
 if model_type == 'hf':

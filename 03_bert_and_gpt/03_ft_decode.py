@@ -1,13 +1,13 @@
 import math
 from transformers import (AutoTokenizer, AutoModelForCausalLM,
                           TrainingArguments, Trainer, DataCollatorForLanguageModeling)
-from utils import prepare_dataset
+from utils import prepare_dataset_eli5
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert/distilgpt2")
 model = AutoModelForCausalLM.from_pretrained("distilbert/distilgpt2")
 block_size = 128
 
-lm_dataset = prepare_dataset(block_size, tokenizer)
+lm_dataset = prepare_dataset_eli5(block_size, tokenizer)
 tokenizer.pad_token = tokenizer.eos_token
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 

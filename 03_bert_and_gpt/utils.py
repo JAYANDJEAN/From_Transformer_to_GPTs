@@ -5,17 +5,17 @@ from torch.nn.utils.rnn import pad_sequence
 import torch
 import numpy as np
 
-eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
-eli5 = eli5.train_test_split(test_size=0.2)
-eli5 = eli5.flatten()
-
 
 def generate_mask(sz: int):
     # 生成一个下三角矩阵
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
-def prepare_dataset(block_size: int, tokenizer):
+def prepare_dataset_eli5(block_size: int, tokenizer):
+    eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
+    eli5 = eli5.train_test_split(test_size=0.2)
+    eli5 = eli5.flatten()
+
     def preprocess_function(examples):
         return tokenizer([" ".join(x) for x in examples["answers.text"]])
 
@@ -40,7 +40,27 @@ def prepare_dataset(block_size: int, tokenizer):
     return dataset
 
 
-def prepare_loader_from_set(batch_size: int, tokenizer):
+def prepare_dataset_books(tokenizer):
+    def pre_process(examples):
+        prefix = "translate German to English: "
+        src_lang = "de"
+        tgt_lang = "en"
+        inputs = [prefix + example[src_lang] for example in examples["translation"]]
+        targets = [example[tgt_lang] for example in examples["translation"]]
+        model_inputs = tokenizer(inputs, text_target=targets, max_length=128, truncation=True)
+        return model_inputs
+
+    books = load_dataset("opus_books", "de-en")
+    books = books["train"].train_test_split(test_size=0.2)
+    dataset = books.map(pre_process, batched=True)
+    return dataset
+
+
+def prepare_loader_from_set_eli5(batch_size: int, tokenizer):
+    eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
+    eli5 = eli5.train_test_split(test_size=0.2)
+    eli5 = eli5.flatten()
+
     # 对于已有数据集，把处理逻辑放在collate_fn
     def collate_fn(batch):
         res = []

@@ -1,20 +1,17 @@
 from datasets import load_dataset
-from transformers import AutoTokenizer
-from transformers import DataCollatorForSeq2Seq
-from transformers import AutoModelForSeq2SeqLM, Seq2SeqTrainingArguments, Seq2SeqTrainer
+from transformers import AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM, Seq2SeqTrainingArguments, \
+    Seq2SeqTrainer
 import evaluate
 import numpy as np
-from transformers import pipeline
+from utils import prepare_dataset_books
+
+checkpoint = "google-t5/t5-small"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
+dataset = prepare_dataset_books(tokenizer)
 
 
-def pre_process_function(examples):
-    inputs = [prefix + example[src_lang] for example in examples["translation"]]
-    targets = [example[tgt_lang] for example in examples["translation"]]
-    model_inputs = tokenizer(inputs, text_target=targets, max_length=128, truncation=True)
-    return model_inputs
-
-
-def post_process_text(preds, labels):
+def post_process(preds, labels):
     preds = [pred.strip() for pred in preds]
     labels = [[label.strip()] for label in labels]
     return preds, labels
@@ -27,7 +24,7 @@ def compute_metrics(eval_preds):
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    decoded_preds, decoded_labels = post_process_text(decoded_preds, decoded_labels)
+    decoded_preds, decoded_labels = post_process(decoded_preds, decoded_labels)
     result = metric.compute(predictions=decoded_preds, references=decoded_labels)
     result = {"bleu": result["score"]}
     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
@@ -36,22 +33,7 @@ def compute_metrics(eval_preds):
     return result
 
 
-checkpoint = "/Users/yuan.feng/Downloads/t5-small"
-tokenizer = AutoTokenizer.from_pretrained(checkpoint)
-model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
-
-# finetune
-books = load_dataset("opus_books", "de-en")
-books = books["train"].train_test_split(test_size=0.2)
-print(books["train"][0])
-
-src_lang = "de"
-tgt_lang = "en"
-prefix = "translate German to English: "
-
-tokenized_books = books.map(pre_process_function, batched=True)
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=checkpoint)
-
 metric = evaluate.load("sacrebleu")
 
 training_args = Seq2SeqTrainingArguments(
@@ -64,22 +46,21 @@ training_args = Seq2SeqTrainingArguments(
     save_total_limit=3,
     num_train_epochs=2,
     predict_with_generate=True,
-    fp16=True,
-    push_to_hub=True,
+    push_to_hub=False,
 )
 
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_books["train"],
-    eval_dataset=tokenized_books["test"],
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["test"],
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
 )
 
-trainer.train()
-
-text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
-translator = pipeline("translation_xx_to_yy", model="awesome_opus_books_model")
-translator(text)
+# trainer.train()
+#
+# text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
+# translator = pipeline("translation_xx_to_yy", model="awesome_opus_books_model")
+# translator(text)

@@ -1,7 +1,7 @@
 from transformers import RobertaTokenizer, RobertaModel
 from modelsummary import summary
 import torch
-from utils import prepare_loader_from_set, prepare_loader_from_file
+from utils import prepare_loader_from_set_eli5, prepare_loader_from_file, prepare_dataset_books
 
 model_name = "distilbert/distilroberta-base"
 tokenizer = RobertaTokenizer.from_pretrained(model_name)
@@ -36,7 +36,7 @@ def check_mlm_forward():
     print(encode['input_ids'])
     print(tokenizer.decode(encode['input_ids'].squeeze()))
 
-    train_dataloader, _ = prepare_loader_from_set(BATCH_SIZE, tokenizer)
+    train_dataloader, _ = prepare_loader_from_set_eli5(BATCH_SIZE, tokenizer)
     _, (src, src_mask) = next(enumerate(train_dataloader))
     # 展示第一条结果，应该和上面的encode结果是一样的
     print(src[0, :])
@@ -75,5 +75,10 @@ def check_custom_data():
     print(tgt[0, :])
 
 
+def check_opus_books():
+    dataset = prepare_dataset_books(tokenizer)
+    print(dataset)
+
+
 if __name__ == '__main__':
-    check_mlm_model()
+    check_opus_books()

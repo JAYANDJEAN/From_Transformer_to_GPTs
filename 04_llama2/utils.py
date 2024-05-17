@@ -76,6 +76,8 @@ class LlamaForCausal:
             self.eos_id = self.tokenizer.eos_id()
         elif tokenizer_tp == 'GLM':
             self.tokenizer = ChatGLMTokenizer(vocab_file=tokenizer_path)
+            # 64793
+            self.args.vocab_size = self.tokenizer.vocab_size - 1
             self.pad_id = self.tokenizer.pad_token_id
             self.eos_id = self.tokenizer.eos_token_id
         else:
