@@ -1,17 +1,14 @@
-from transformers import RobertaTokenizer, RobertaModel
+from transformers import RobertaTokenizer, RobertaModel, AutoModel, AutoTokenizer
 from modelsummary import summary
 import torch
 from utils import prepare_loader_from_set_eli5, prepare_loader_from_file, prepare_dataset_books
-
-model_name = "distilbert/distilroberta-base"
-tokenizer = RobertaTokenizer.from_pretrained(model_name)
-model = RobertaModel.from_pretrained(model_name)
 
 BATCH_SIZE = 64
 SRC_SEQ_LEN = 17
 
 
 def check_mlm_model():
+    model = RobertaModel.from_pretrained("distilbert/distilroberta-base")
     print('=================model=======================')
     src = torch.randint(low=0, high=100, size=(BATCH_SIZE, SRC_SEQ_LEN), dtype=torch.int)
     mask = torch.randn(size=(BATCH_SIZE, SRC_SEQ_LEN))
@@ -29,6 +26,8 @@ def check_mlm_model():
 
 
 def check_mlm_forward():
+    tokenizer = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
+    model = RobertaModel.from_pretrained("distilbert/distilroberta-base")
     print('=================tokenizer=======================')
     # encode/decode one sentence
     text = "Why there was a 'leap second' added to the end of 2016?"
@@ -54,7 +53,30 @@ def check_mlm_forward():
     print(pooler_output[0, :10])
 
 
+def check_gpt_model():
+    from transformers import GPT2Tokenizer, TFGPT2Model
+    text = "Kontrakan Pak Haji Ewok, RT.1/RW.6, Kp. Jati Pilar, Kab. Bekasi, Jawa Barat 17530, Indonesia"
+    model = AutoModel.from_pretrained("openai-community/gpt2")
+    tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
+    encode = tokenizer(text, return_tensors='pt')
+    print('vocab_size:', tokenizer.vocab_size)
+
+    print(tokenizer.eos_token_id)
+    print(tokenizer.bos_token_id)
+    print(tokenizer.unk_token_id)
+    print(tokenizer.pad_token_id)
+    print(encode['input_ids'])
+
+    output = model(**encode)
+    last_hidden_state = output.last_hidden_state
+    past_key_values = output.past_key_values
+
+    print(past_key_values)
+
+
+
 def check_custom_data():
+    tokenizer = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
     csv_file = '../00_assets/csv/addr_to_geo_min.csv'
     columns = ['address', 's2']
     special_tokens = {
@@ -76,9 +98,10 @@ def check_custom_data():
 
 
 def check_opus_books():
+    tokenizer = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
     dataset = prepare_dataset_books(tokenizer)
     print(dataset)
 
 
 if __name__ == '__main__':
-    check_opus_books()
+    check_gpt_model()
