@@ -44,8 +44,8 @@ def check_mlm_forward():
     output = model(input_ids=src, attention_mask=src_mask)
     memory = output.last_hidden_state
     pooler_output = output.pooler_output
-    print(memory.shape)
-    print(pooler_output.shape)
+    print(memory.shape)  # torch.Size([64, 56, 768])
+    print(pooler_output.shape)  # torch.Size([64, 768])
     index = 0
     # 这里 pooler 和 last_hidden_state 的第一个为什么不相同呢？是因为 pooler 还经过一个 nn.Linear。
     # this returns the classification token after processing through a linear layer and a tanh activation function.
@@ -54,25 +54,16 @@ def check_mlm_forward():
 
 
 def check_gpt_model():
-    from transformers import GPT2Tokenizer, TFGPT2Model
     text = "Kontrakan Pak Haji Ewok, RT.1/RW.6, Kp. Jati Pilar, Kab. Bekasi, Jawa Barat 17530, Indonesia"
     model = AutoModel.from_pretrained("openai-community/gpt2")
     tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
     encode = tokenizer(text, return_tensors='pt')
     print('vocab_size:', tokenizer.vocab_size)
 
-    print(tokenizer.eos_token_id)
-    print(tokenizer.bos_token_id)
-    print(tokenizer.unk_token_id)
-    print(tokenizer.pad_token_id)
-    print(encode['input_ids'])
-
     output = model(**encode)
     last_hidden_state = output.last_hidden_state
     past_key_values = output.past_key_values
-
-    print(past_key_values)
-
+    print(last_hidden_state.shape)  # torch.Size([1, 41, 768])
 
 
 def check_custom_data():
