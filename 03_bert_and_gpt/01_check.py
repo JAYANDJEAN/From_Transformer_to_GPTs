@@ -7,6 +7,21 @@ BATCH_SIZE = 64
 SRC_SEQ_LEN = 17
 
 
+def check_tokenizer():
+    text = "Why there was a 'leap second' added to the end of 2016?"
+    tokenizer_bert = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
+    tokenizer_gpt = AutoTokenizer.from_pretrained("openai-community/gpt2")
+    encode_bert = tokenizer_bert(text, return_tensors='pt', add_special_tokens=False)
+    print(tokenizer_bert.decode(encode_bert['input_ids'].squeeze()))
+    encode_bert = tokenizer_bert(text, return_tensors='pt', add_special_tokens=True)
+    print(tokenizer_bert.decode(encode_bert['input_ids'].squeeze()))
+
+    encode_gpt = tokenizer_gpt(text, return_tensors='pt', add_special_tokens=False)
+    print(tokenizer_gpt.decode(encode_gpt['input_ids'].squeeze()))
+    encode_gpt = tokenizer_gpt(text, return_tensors='pt', add_special_tokens=True)
+    print(tokenizer_gpt.decode(encode_gpt['input_ids'].squeeze()))
+
+
 def check_mlm_model():
     model = RobertaModel.from_pretrained("distilbert/distilroberta-base")
     print('=================model=======================')
@@ -95,4 +110,4 @@ def check_opus_books():
 
 
 if __name__ == '__main__':
-    check_gpt_model()
+    check_tokenizer()
