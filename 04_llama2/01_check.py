@@ -1,4 +1,4 @@
-from utils import init_model
+from utils import init_model, InstructionDataset
 from llama import *
 import matplotlib.pyplot as plt
 from torch import Tensor
@@ -7,6 +7,7 @@ from modelsummary import summary
 from sentencepiece import SentencePieceProcessor
 from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 import yaml
+from torch.utils.data import DataLoader
 
 
 # ---------------------------llama--------------------------------- #
@@ -209,6 +210,29 @@ def check_glm_tokenizer():
     print('eos_token_id:', tokenizer.special_tokens['<eos>'])
 
 
+def check_pre_train_dataset():
+    pass
+
+
+def check_instruction_dataset():
+    with open('../00_assets/yml/local_settings.yml', 'r') as file:
+        setting = yaml.safe_load(file)
+    data_input = setting['model_path'] + 'alpaca_gpt4_data_zh.json'
+    tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
+    train_loader = DataLoader(InstructionDataset(data_input, tokenizer, max_length=256),
+                              batch_size=1, pin_memory=False, drop_last=False,
+                              shuffle=False, num_workers=0)
+    _, (src, tgt, loss_mask) = next(enumerate(train_loader))
+    data = [30910, 31983, 35959, 32474]
+    print([tokenizer.decode(i) for i in data])
+    # 固定长度，用pad填充，一行一个prompt
+    print(src)
+    print(tgt)
+    print(tokenizer.decode(src.squeeze().tolist()))
+    print(tokenizer.decode(tgt.squeeze().tolist()))
+    print(loss_mask)
+
+
 if __name__ == '__main__':
     VOCAB_SIZE = 32000
     SEQ_LEN = 23
@@ -230,5 +254,4 @@ if __name__ == '__main__':
     # # check_tokenizer()
     # check_glm_tokenizer()
     # check_model_and_loss()
-    check_glm_tokenizer()
-
+    check_instruction_dataset()
