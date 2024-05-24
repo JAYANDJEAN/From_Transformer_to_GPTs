@@ -1,45 +1,44 @@
-## From_Transformer_to_GPTs
+# From_Transformer_to_GPTs
 
-### 1、Tokenizer
+## Introduction
 
-1. 了解多种LLM的tokenizer
-2. 利用`tokenizers`训练一个BPE
-3. 从头训练一个BPE
-4. 参考：
-   1. https://www.huaxiaozhuan.com/%E5%B7%A5%E5%85%B7/huggingface_transformer/chapters/1_tokenizer.html
+This project covers the following tasks:
+1. Understanding and training tokenizers.
+2. Implementing Transformers from scratch and using PyTorch.
+3. Fine-tuning BERT and GPT models.
+4. Training a small version of the LLaMa model in Chinese.
+5. Exploring the CodeLLaMA model.
+6. Learning and implementing distributed training techniques.
 
-### 2、Transformer
+## Tokenizers
 
-1. 用PyTorch从头实现Transformer
-2. 针对德语到英语的翻译任务，用PyTorch自带的Transformer和手写的Transformer分别跑训练过程，并翻译具体句子。
-3. 参考：
-   1. https://github.com/hyunwoongko/transformer 
-   2. https://pytorch.org/tutorials/beginner/translation_transformer.html
-   3. https://nlp.seas.harvard.edu/annotated-transformer/
+1. Training a Byte Pair Encoding (BPE) Tokenizer using the Hugging Face `tokenizers` library.
 
-### 3、Bert and GPT
+## Transformers
 
-1. 了解huggingface提供的多种Bert变体。了解bert和gpt的fine-tune。了解transformers的Trainer。
-2. 为已经pre-train的encoder添加一个未训练的decoder，实现generate。
+1. Implementing a Transformer from Scratch
+2. Complete German to English translation task with PyTorch's built-in Transformer and the custom Transformer.
 
-### 4、LLaMa
+## BERT and GPT
 
-1. 参考meta-llama代码，实现一个单机版本的llama2。
-2. 下载中文数据，训练一个tiny版本的llama-chinese。
-3. 指令微调训练好的tiny-llama-chinese
-4. 跑通三种推理方式，下载的7b，hf的封装，训练的tiny。
-5. RLHF
-6. 参考：
-   1. https://github.com/hkproj/pytorch-llama
-   2. https://github.com/meta-llama/llama
-   3. https://github.com/DLLXW/baby-llama2-chinese
+1. Fine-Tuning BERT and GPT using the Hugging Face `transformers` library.
 
-### 5、CodeLLaMA
+## LLaMa
 
-1. 了解一下。未修改代码。
-2. 参考：
-   1. https://github.com/meta-llama/codellama/tree/main
+1. Training a Tiny Version of LLaMa-Chinese
 
-### 6、分布式训练
+## CodeLLaMA
 
-1. 上面代码都是单机版本，现在需要学习一下分布式。
+1. Exploring CodeLLaMA
+
+## References
+1. [Hugging Face Tokenizers](https://huggingface.co/docs/tokenizers/index)
+2. [Hyunwoongko's Transformer](https://github.com/hyunwoongko/transformer)
+3. [PyTorch Translation Tutorial](https://pytorch.org/tutorials/beginner/translation_transformer.html)
+4. [Harvard NLP Annotated Transformer](https://nlp.seas.harvard.edu/annotated-transformer/)
+5. [Masked language modeling](https://huggingface.co/docs/transformers/tasks/masked_language_modeling)
+6. [Causal language modeling](https://huggingface.co/docs/transformers/tasks/language_modeling)
+5. [PyTorch LLaMa](https://github.com/hkproj/pytorch-llama)
+6. [Meta LLaMa](https://github.com/meta-llama/llama)
+7. [Baby LLaMa-Chinese](https://github.com/DLLXW/baby-llama2-chinese)
+8. [CodeLLaMA GitHub](https://github.com/meta-llama/codellama/tree/main)
