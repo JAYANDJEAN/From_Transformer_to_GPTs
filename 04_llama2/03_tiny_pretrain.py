@@ -4,7 +4,6 @@ from tqdm import tqdm
 from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 from timeit import default_timer as timer
 from utils import init_model
-
 from torch.utils.data import Dataset
 import torch
 import os
@@ -39,14 +38,13 @@ class PretrainDataset(Dataset):
 
 def process_wiki_clean(path_in, path_out):
     # download data: https://huggingface.co/datasets/pleisto/wikipedia-cn-20230720-filtered
-    token = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
     with open(path_in, 'r', encoding='utf-8') as f:
         data = json.load(f)
     doc_ids = []
     for line in tqdm(data):
         text = line['completion']
-        text_id = token.encode(text, add_special_tokens=False)
-        text_id.append(token.special_tokens['<eos>'])
+        text_id = tokenizer.encode(text, add_special_tokens=False)
+        text_id.append(tokenizer.special_tokens['<eos>'])
         if len(text_id) > 5:
             doc_ids += text_id
     arr = np.array(doc_ids, dtype=np.uint16)
@@ -61,6 +59,7 @@ if __name__ == "__main__":
     with open('../00_assets/yml/local_settings.yml', 'r') as file:
         setting = yaml.safe_load(file)
 
+    tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
     data_input = setting['model_path'] + 'wikipedia-cn-20230720-filtered.json'
     data_output = setting['model_path'] + 'wiki.bin'
     save_dir = os.path.join(setting['model_path'], 'tiny_llama')
@@ -91,20 +90,18 @@ if __name__ == "__main__":
     scheduler = get_cosine_schedule_with_warmup(optimizer,
                                                 num_warmup_steps=warmup_steps,
                                                 num_training_steps=total_training_steps)
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)
-
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
     print("Total trainable parameters:", sum(p.numel() for p in llama_model.parameters() if p.requires_grad))
 
     min_train_loss = float('inf')
-
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
         with tqdm(total=len(list(train_loader)), desc=f'Epoch {epoch}', unit='batch') as pbar:
             llama_model.train()
             losses = 0
-            for i, data in enumerate(train_loader):
-                src = data[:, :-1].to(config['device'])
-                tgt = data[:, 1:].to(config['device'])
+            for i, train_data in enumerate(train_loader):
+                src = train_data[:, :-1].to(config['device'])
+                tgt = train_data[:, 1:].to(config['device'])
                 tgt_predict = llama_model(src, 0).to(config['device'])
 
                 optimizer.zero_grad()

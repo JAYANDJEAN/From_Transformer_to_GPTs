@@ -230,4 +230,5 @@ if __name__ == '__main__':
     # # check_tokenizer()
     # check_glm_tokenizer()
     # check_model_and_loss()
+    check_glm_tokenizer()
 
