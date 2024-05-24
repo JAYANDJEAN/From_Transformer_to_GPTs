@@ -1,6 +1,6 @@
 import time
 import json
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pathlib import Path
 from tqdm import tqdm
 
@@ -50,8 +50,7 @@ def init_model(config):
 
 
 class LlamaForCausal:
-    def __init__(self, checkpoints_dir: str, tokenizer_path: str, tokenizer_tp: str,
-                 max_batch_size: int, max_seq_len: int = 2048, device: str = 'cpu'):
+    def __init__(self, checkpoints_dir: str, tokenizer_path: str, tokenizer_tp: str, args: ModelArgs):
         checkpoints = sorted(Path(checkpoints_dir).glob("*.pth"))
         assert len(checkpoints) > 0, f"no checkpoint files found in {checkpoints_dir}"
         print(f'Loading checkpoint "{checkpoints[0]}"')
@@ -59,11 +58,7 @@ class LlamaForCausal:
         checkpoint = torch.load(checkpoints[0], map_location="cpu")
         print(f"Loaded checkpoint in {time.time() - prev_time:.2f}s")
 
-        self.args: ModelArgs = ModelArgs(
-            max_seq_len=max_seq_len,
-            max_batch_size=max_batch_size,
-            device=device
-        )
+        self.args = args
 
         # 兼容一下不同的tokenizer
         assert tokenizer_tp in ("GLM", "SPP")
@@ -83,7 +78,7 @@ class LlamaForCausal:
         else:
             self.tokenizer = None
 
-        self.model = LlamaModel(self.args).to(device)
+        self.model = LlamaModel(self.args).to(self.args.device)
         prev_time = time.time()
         self.model.load_state_dict(checkpoint, strict=True)
         print(f"Loaded state dict in {time.time() - prev_time:.2f}s")

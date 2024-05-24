@@ -1,6 +1,6 @@
-init_from: 'scratch'
-device: 'cpu'
-dtype: 'float16'
+init_from: scratch
+device: cuda
+dtype: float16
 batch_size: 32
 
 num_epochs: 10
