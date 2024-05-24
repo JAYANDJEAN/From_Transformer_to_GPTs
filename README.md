@@ -25,7 +25,7 @@
 ### 4、LLaMa
 
 1. 参考meta-llama代码，实现一个单机版本的llama2。
-2. 下载中文数据，训练一个tiny版本的llama-chinese，优化器设置很随意，主要是让流程跑起来。
+2. 下载中文数据，训练一个tiny版本的llama-chinese。
 3. 指令微调训练好的tiny-llama-chinese
 4. 跑通三种推理方式，下载的7b，hf的封装，训练的tiny。
 5. RLHF
