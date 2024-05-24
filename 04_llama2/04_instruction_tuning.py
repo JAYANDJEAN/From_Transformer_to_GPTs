@@ -15,10 +15,7 @@ import yaml
 
 
 class InstructionDataset(Dataset):
-    def __init__(self, dp, tokenizer
-                 , max_length=256
-                 , prompt_max_len=128
-                 , answer_max_len=128):
+    def __init__(self, dp, tokenizer, max_length=256, prompt_max_len=128, answer_max_len=128):
         super().__init__()
         # download data: https://huggingface.co/datasets/shibing624/alpaca-zh
         with open(dp, 'r', encoding='utf-8') as f:
@@ -66,8 +63,7 @@ class InstructionDataset(Dataset):
 def train_epoch(model, dataloader):
     model.train()
     losses = 0
-    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'],
-                                 betas=(config['beta1'], config['beta2']))
+    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'], betas=(config['beta1'], config['beta2']))
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)
 
     for i, (src, tgt, loss_mask) in enumerate(dataloader):
@@ -91,29 +87,22 @@ def train_epoch(model, dataloader):
 if __name__ == "__main__":
     with open('../00_assets/yml/tiny_chinese_llama.yml', 'r') as file:
         config = yaml.safe_load(file)
-    config['init_from'] = 'resume'
     with open('../00_assets/yml/local_settings.yml', 'r') as file:
         setting = yaml.safe_load(file)
-    datapath = setting['model_path'] + 'alpaca_gpt4_data_zh.json'
+
+    data_input = setting['model_path'] + 'alpaca_gpt4_data_zh.json'
+    save_dir = os.path.join(setting['model_path'], 'tiny_llama')
+    config['init_from'] = 'resume'
+    config['save_dir'] = save_dir
 
     tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
-    train_ds = InstructionDataset(datapath, tokenizer, max_length=256)
-    train_loader = torch.utils.data.DataLoader(
-        train_ds,
-        batch_size=1,
-        pin_memory=False,
-        drop_last=False,
-        shuffle=False,
-        num_workers=0,
-    )
-
+    train_ds = InstructionDataset(data_input, tokenizer, max_length=256)
+    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=1, pin_memory=False, drop_last=False,
+                                               shuffle=False, num_workers=0)
     llama_model = init_model(config)
 
     print("Total trainable parameters:", sum(p.numel() for p in llama_model.parameters() if p.requires_grad))
     min_train_loss = float('inf')
-    save_dir = os.path.join(config['out_dir'], 'pretrain')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
 
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
@@ -121,7 +110,6 @@ if __name__ == "__main__":
             train_loss = train_epoch(llama_model, train_loader)
             if train_loss < min_train_loss:
                 min_train_loss = train_loss
-                torch.save(llama_model.state_dict(), '{}/best.pth'.format(save_dir))
+                torch.save(llama_model.state_dict(), '{}/best_chat.pth'.format(save_dir))
             end_time = timer()
-            print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-                   f"Epoch time = {(end_time - start_time):.3f}s"))
+            print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Epoch time = {(end_time - start_time):.3f}s"))
