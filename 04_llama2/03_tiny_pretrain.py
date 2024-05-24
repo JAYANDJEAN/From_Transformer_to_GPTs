@@ -1,9 +1,7 @@
-import json
-import numpy as np
 from tqdm import tqdm
 from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 from timeit import default_timer as timer
-from utils import init_model
+from utils import init_model, process_wiki_clean, PretrainDataset
 from torch.utils.data import Dataset
 import torch
 import os
@@ -14,10 +12,6 @@ from transformers import get_cosine_schedule_with_warmup
 '''
 https://github.com/DLLXW/baby-llama2-chinese
 '''
-
-
-
-
 
 if __name__ == "__main__":
     # 模型训练不能用kv_cache，因为...
