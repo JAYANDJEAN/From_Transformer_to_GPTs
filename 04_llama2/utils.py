@@ -1,14 +1,97 @@
 import time
 import json
-from typing import Optional, List, Dict
+from typing import Optional, List
 from pathlib import Path
 from tqdm import tqdm
-
+import numpy as np
+import pandas as pd
 import torch
+from torch.utils.data import Dataset
 from sentencepiece import SentencePieceProcessor
 from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 from llama import ModelArgs, LlamaModel, sample_top_p
-import os
+
+
+def process_wiki_clean(path_in, path_out, tokenizer):
+    # download data: https://huggingface.co/datasets/pleisto/wikipedia-cn-20230720-filtered
+    with open(path_in, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    doc_ids = []
+    for line in tqdm(data):
+        text = line['completion']
+        text_id = tokenizer.encode(text, add_special_tokens=False)
+        text_id.append(tokenizer.special_tokens['<eos>'])
+        if len(text_id) > 5:
+            doc_ids += text_id
+    arr = np.array(doc_ids, dtype=np.uint16)
+    with open(path_out, 'wb') as f:
+        f.write(arr.tobytes())
+
+
+class PretrainDataset(Dataset):
+    def __init__(self, data_path_lst, max_length=256):
+        super().__init__()
+        data_lst = []
+        for data_path in data_path_lst:
+            with open(data_path, 'rb') as f:
+                data = np.fromfile(f, dtype=np.uint16)
+                data_lst.append(data)
+        data = np.concatenate(data_lst)
+        data = data[:max_length * int(len(data) / max_length)]
+        self.data = data.reshape(-1, max_length)
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, index: int):
+        sample = self.data[index].astype(np.int64)
+        return torch.from_numpy(sample)
+
+
+class InstructionDataset(Dataset):
+    def __init__(self, data_path, tokenizer, max_length=256, prompt_max_len=128, answer_max_len=128):
+        super().__init__()
+        # download data: https://huggingface.co/datasets/shibing624/alpaca-zh
+        with open(data_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        df = pd.DataFrame(data)
+        self.df = df.loc[(df['instruction'].str.len() >= 10) & (df['instruction'].str.len() <= 256) &
+                         (df['output'].str.len() >= 5) & (df['output'].str.len() <= 256), ['instruction', 'output']]
+        self.max_length = max_length
+        self.prompt_max_len = prompt_max_len
+        self.answer_max_len = answer_max_len
+        self.tokenizer = tokenizer
+        self.bos = self.tokenizer.special_tokens['<bos>']  # 1
+        self.eos = self.tokenizer.special_tokens['<eos>']  # 2
+        self.pad = self.tokenizer.special_tokens['<pad>']  # 0
+
+    def __len__(self):
+        return self.df.shape[0]
+
+    def __getitem__(self, index: int):
+        sample = self.df.iloc[index]
+        prompt = self.tokenizer.encode(sample['instruction'], add_special_tokens=False)
+        answer = self.tokenizer.encode(sample['output'], add_special_tokens=False)
+        if len(prompt) > self.prompt_max_len:
+            prompt = prompt[:self.prompt_max_len - 2]
+        if len(answer) > self.answer_max_len:
+            answer = answer[:self.answer_max_len - 2]
+
+        input_id = prompt + [self.bos] + answer + [self.eos]
+        context_length = input_id.index(self.bos)
+        mask_position = context_length - 1
+        pad_len = self.max_length - len(input_id)
+        input_id = input_id + [self.pad] * pad_len
+        if pad_len == 0:
+            loss_mask = [0] * context_length + [1] * (len(input_id[mask_position + 1:])) + [0] * pad_len
+        else:
+            loss_mask = [0] * context_length + [1] * (len(input_id[mask_position + 1:-pad_len])) + [0] * pad_len
+        input_id = np.array(input_id)
+        src = np.array(input_id[:-1]).astype(np.int64)
+        tgt = np.array(input_id[1:]).astype(np.int64)
+        loss_mask = np.array(loss_mask[:-1])
+
+        return torch.from_numpy(src), torch.from_numpy(tgt), torch.from_numpy(loss_mask)
 
 
 def init_model(config):

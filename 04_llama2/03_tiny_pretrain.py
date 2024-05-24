@@ -16,40 +16,7 @@ https://github.com/DLLXW/baby-llama2-chinese
 '''
 
 
-class PretrainDataset(Dataset):
-    def __init__(self, data_path_lst, max_length=256):
-        super().__init__()
-        data_lst = []
-        for data_path in data_path_lst:
-            with open(data_path, 'rb') as f:
-                data = np.fromfile(f, dtype=np.uint16)
-                data_lst.append(data)
-        data = np.concatenate(data_lst)
-        data = data[:max_length * int(len(data) / max_length)]
-        self.data = data.reshape(-1, max_length)
 
-    def __len__(self):
-        return self.data.shape[0]
-
-    def __getitem__(self, index: int):
-        sample = self.data[index].astype(np.int64)
-        return torch.from_numpy(sample)
-
-
-def process_wiki_clean(path_in, path_out):
-    # download data: https://huggingface.co/datasets/pleisto/wikipedia-cn-20230720-filtered
-    with open(path_in, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    doc_ids = []
-    for line in tqdm(data):
-        text = line['completion']
-        text_id = tokenizer.encode(text, add_special_tokens=False)
-        text_id.append(tokenizer.special_tokens['<eos>'])
-        if len(text_id) > 5:
-            doc_ids += text_id
-    arr = np.array(doc_ids, dtype=np.uint16)
-    with open(path_out, 'wb') as f:
-        f.write(arr.tobytes())
 
 
 if __name__ == "__main__":
@@ -70,7 +37,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(data_output):
         print('-------data process--------')
-        process_wiki_clean(data_input, data_output)
+        process_wiki_clean(data_input, data_output, tokenizer)
 
     train_loader = torch.utils.data.DataLoader(PretrainDataset([data_output], max_length=config['max_seq_len']),
                                                batch_size=config['batch_size'])
