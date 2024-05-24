@@ -3,7 +3,7 @@ import torch
 from tqdm import tqdm
 import yaml
 from utils import prepare_loader_from_file, generate_mask, generate
-from models import Seq2Seq_Pre_Encode
+from models import EncoderDecoderModel
 from transformers import AutoTokenizer
 
 
@@ -65,7 +65,7 @@ def train_op(config):
 
     # =========================================================== #
 
-    transformer = Seq2Seq_Pre_Encode(model_id, len(tgt_vocab)).to(device)
+    transformer = EncoderDecoderModel(model_id, len(tgt_vocab)).to(device)
     train_loader, val_loader, test_loader = prepare_loader_from_file(
         batch_size, tokenizer, reversed_vocab, csv_file, columns
     )

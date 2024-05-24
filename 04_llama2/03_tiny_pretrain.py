@@ -78,6 +78,6 @@ if __name__ == "__main__":
 
             if train_loss < min_train_loss:
                 min_train_loss = train_loss
-                torch.save(llama_model.state_dict(), '{}/best.pth'.format(save_dir))
+                torch.save(llama_model.state_dict(), '{}/tiny_chinese_llama.pth'.format(save_dir))
             end_time = timer()
             print(f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Epoch time = {(end_time - start_time):.3f}s")

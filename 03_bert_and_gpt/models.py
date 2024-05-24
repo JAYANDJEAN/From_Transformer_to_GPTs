@@ -26,9 +26,9 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x + self.pos_embedding[:, :x.size(1), :])
 
 
-class Seq2Seq_Pre_Encode(nn.Module):
+class EncoderDecoderModel(nn.Module):
     def __init__(self, model_id, tgt_vocab_size, n_layers=2, n_heads=4, dropout_rate=0.1):
-        super(Seq2Seq_Pre_Encode, self).__init__()
+        super().__init__()
 
         self.encoder = AutoModel.from_pretrained(model_id)
         config = self.encoder.config.to_dict()
