@@ -81,24 +81,26 @@ if __name__ == "__main__":
         config = yaml.safe_load(file)
     with open('../00_assets/yml/local_settings.yml', 'r') as file:
         setting = yaml.safe_load(file)
-    dp = setting['model_path'] + 'wikipedia-cn-20230720-filtered.json'
 
-    data_file = config['out_dir'] + 'wiki.bin'
-    if not os.path.exists(data_file):
-        print('-------data process--------')
-        process_wiki_clean(dp, data_file)
+    data_input = setting['model_path'] + 'wikipedia-cn-20230720-filtered.json'
+    data_output = setting['model_path'] + 'wiki.bin'
+    save_dir = os.path.join(setting['model_path'], 'tiny_llama')
+    config['save_dir'] = save_dir
 
-    train_ds = PretrainDataset([data_file], max_length=config['max_seq_len'])
-    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=config['batch_size'])
-
-    llama_model = init_model(config)
-
-    print("Total trainable parameters:", sum(p.numel() for p in llama_model.parameters() if p.requires_grad))
-    min_train_loss = float('inf')
-    save_dir = os.path.join(config['out_dir'], 'pretrain')
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    if not os.path.exists(data_output):
+        print('-------data process--------')
+        process_wiki_clean(data_input, data_output)
+
+    train_ds = PretrainDataset([data_output], max_length=config['max_seq_len'])
+    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=config['batch_size'])
+    llama_model = init_model(config)
+
+    print("Total trainable parameters:", sum(p.numel() for p in llama_model.parameters() if p.requires_grad))
+
+    min_train_loss = float('inf')
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
         with tqdm(total=len(list(train_loader)), desc=f'Epoch {epoch}', unit='batch') as pbar:

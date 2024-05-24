@@ -30,10 +30,10 @@ def init_model(config):
         print("Initializing a new model from scratch")
         model = LlamaModel(model_args)
     elif config['init_from'] == "resume":
-        print(f"Resuming training from {config['out_dir']}")
+        print(f"Resuming training from {config['save_dir']}")
         # resume training from a checkpoint.
-        ckpt_path = os.path.join(config['out_dir'], "pretrain/best.pt")
-        checkpoint = torch.load(ckpt_path)
+        checkpoints = sorted(Path(config['save_dir']).glob("*.pth"))
+        checkpoint = torch.load(checkpoints[0], map_location="cpu")
         model = LlamaModel(model_args)
         state_dict = checkpoint["model"]
         # fix the keys of the state dictionary :(
