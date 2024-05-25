@@ -89,9 +89,6 @@ def train_and_translate():
     '''
     A trendy girl talking on her cellphone while gliding slowly down the street.
     A woman with a large purse is walking by a gate.
-    
-    A bald girl talks on a cellphone while talking to her cellphone .
-    A woman with a large purse is walking past a gate .
     '''
     src_sentences = [
         "Ein schickes Mädchen spricht mit dem Handy während sie langsam die Straße entlangschwebt.",

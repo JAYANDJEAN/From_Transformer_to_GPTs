@@ -18,9 +18,9 @@ def prepare_dataset(batch_size: int):
     func_vocabs = {}
     func_t2i = {}
 
-    url = "https://raw.githubusercontent.com/neychev/small_DL_repo/master/datasets/Multi30k/"
-    multi30k.URL["train"] = url + "training.tar.gz"
-    multi30k.URL["valid"] = url + "validation.tar.gz"
+    # url = "https://raw.githubusercontent.com/neychev/small_DL_repo/master/datasets/Multi30k/"
+    # multi30k.URL["train"] = url + "training.tar.gz"
+    # multi30k.URL["valid"] = url + "validation.tar.gz"
 
     # 1.定义 tokenizer
     func_token[src_lang] = get_tokenizer('spacy', language='de_core_news_sm')

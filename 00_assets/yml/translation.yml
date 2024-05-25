@@ -1,7 +1,7 @@
 model_name: torch
 model_version: v1
 batch_size: 128
-num_epochs: 0
+num_epochs: 10
 num_encode: 3
 num_decode: 3
 d_model: 512
