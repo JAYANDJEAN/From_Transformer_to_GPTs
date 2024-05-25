@@ -80,33 +80,40 @@ def generate_mask(sz: int):
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
-def generate(model: torch.nn.Module, src_sentence: str, text_to_indices: Dict, vocabs: Dict, device):
+def generate(model: torch.nn.Module, src_sentences: List[str], text_to_indices: Dict, vocabs: Dict, device):
     model.eval()
-    # 处理的数据必须是 batch_first=True，模型也是
-    # torch.Size([seq_len]) 转成 torch.Size([1, seq_len])
-    src_tensor = text_to_indices[src_lang](src_sentence).unsqueeze(0).to(device)
-    num_tokens = src_tensor.shape[1]
-    src_mask = (torch.zeros(num_tokens, num_tokens)).to(device)
-    # memory: torch.Size([1, seq_len, d_model])
-    memory = model.encode(src_tensor, src_mask).to(device)
-    # torch.Size([1, 1]) 相当于只有一个启始字符
-    ys = torch.ones(1, 1).fill_(SPECIAL_IDS['<bos>']).type(torch.long).to(device)
+    # text_to_indices 相当于 tokenizer的encode
+    # vocabs 相当于 tokenizer的decode
 
-    for i in range(num_tokens + 4):
-        # 这里不用mask也行的把
-        tgt_mask = (generate_mask(ys.size(1))).to(device)
-        # out: torch.Size([1, seq_len, d_model])
-        out = model.decode(ys, memory, tgt_mask)
+    src_tensor = [text_to_indices[src_lang](src) for src in src_sentences]
+    src_tensor = pad_sequence(src_tensor, padding_value=SPECIAL_IDS['<pad>'], batch_first=True)
+    batch_size, seq_len = src_tensor.shape
+
+    src_mask = (torch.zeros(seq_len, seq_len)).to(device)
+    src_padding_mask = (src_tensor == SPECIAL_IDS['<pad>']).to(device)
+    # memory: torch.Size([batch_size, seq_len, d_model])
+    memory = model.encode(src_tensor, src_mask, src_padding_mask).to(device)
+    generate_words = torch.ones(batch_size, 1).fill_(SPECIAL_IDS['<bos>']).long().to(device)
+
+    for i in range(seq_len + 4):
+        # 这里不用mask也行的把????????
+        tgt_mask = (generate_mask(generate_words.size(1))).to(device)
+        # out: torch.Size([batch_size, seq_len, d_model])
+        out = model.decode(generate_words, memory, tgt_mask, None)
         # 取最后一个词的embedding，然后计算这个词的概率分布
         prob = model.generator(out[:, -1, :])
-        # next_word: torch.Size([1])
+        # next_word: torch.Size([batch_size, 1])
         next_word = torch.argmax(prob, dim=1).unsqueeze(1)
-        ys = torch.cat([ys, next_word], dim=1)
-        if next_word.item() == SPECIAL_IDS['<eos>']:
+        generate_words = torch.cat([generate_words, next_word], dim=1)
+        print(generate_words)
+
+        if all(next_word == SPECIAL_IDS['<eos>']):
             break
-    tgt_tokens = ys.flatten()
-    tgt_words = vocabs[tgt_lang].lookup_tokens(list(tgt_tokens.cpu().numpy()))
-    return " ".join([i for i in tgt_words if i not in SPECIAL_IDS.keys()])
+
+    #
+    # tgt_tokens = ys.flatten()
+    # tgt_words = vocabs[tgt_lang].lookup_tokens(list(tgt_tokens.cpu().numpy()))
+    # return " ".join([i for i in tgt_words if i not in SPECIAL_IDS.keys()])
 
 
 def bleu():

@@ -155,6 +155,7 @@ class DecoderLayer(nn.Module):
         return x
 
 
+# 没有实现key_padding_mask
 class TransformerScratch(nn.Module):
     def __init__(self, num_encoder_layers: int,
                  num_decoder_layers: int,
@@ -257,8 +258,18 @@ class TransformerTorch(nn.Module):
                                 memory_key_padding_mask)
         return self.generator(outs)
 
-    def encode(self, src: Tensor, src_mask: Tensor):
-        return self.transformer.encoder(self.positional_encoding(self.src_tok_emb(src)), src_mask)
+    # 当你批量generate时，是需要加上src_padding_mask，因为多条数据需要对齐。
+    # 但Tutorial是generate单条数据，所以可以不加。
+    # 因为一般场景下，需要批量生成，所以我改成需要加 src_padding_mask
+    def encode(self, src: Tensor, src_mask: Tensor, src_padding_mask: Tensor):
+        return self.transformer.encoder(
+            self.positional_encoding(self.src_tok_emb(src)),
+            src_mask,
+            src_padding_mask)
 
-    def decode(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor):
-        return self.transformer.decoder(self.positional_encoding(self.tgt_tok_emb(tgt)), memory, tgt_mask)
+    def decode(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor, tgt_padding_mask: Tensor):
+        return self.transformer.decoder(
+            self.positional_encoding(self.tgt_tok_emb(tgt)),
+            memory,
+            tgt_mask,
+            tgt_padding_mask)

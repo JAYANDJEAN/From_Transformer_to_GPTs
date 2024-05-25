@@ -7,6 +7,7 @@ from models import (PositionalEncoding, ScaleDotProductAttention,
                     TransformerScratch, TransformerTorch)
 from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang, generate
 import warnings
+import torch.nn as nn
 
 warnings.filterwarnings("ignore")
 
@@ -136,6 +137,25 @@ def check_transformer():
     assert out2.shape == (BATCH_SIZE, TGT_SEQ_LEN, tgt_vocab_size)
 
 
+def check_padding_mask():
+    encoder_layer = nn.TransformerEncoderLayer(d_model=D_MODEL, nhead=N_HEAD, batch_first=True)
+    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
+
+    _, (src, tgt) = next(enumerate(train_loader))
+    seq_len = src.shape[1]
+    src_emb = torch.randn(BATCH_SIZE, seq_len, D_MODEL)
+    src_mask = torch.zeros((seq_len, seq_len))
+    src_padding_mask = (src == SPECIAL_IDS['<pad>'])
+
+    print(src.shape)
+    print(src_padding_mask.shape)
+    # 很明显，加与不加src_padding_mask是有区别的，但对最终的结果影响大吗？
+    out = encoder_layer(src_emb, src_mask, src_padding_mask)
+    print(out[0, 0, 0:5])
+    out = encoder_layer(src_emb, src_mask, None)
+    print(out[0, 0, 0:5])
+
+
 def check_data():
     print('--------------------------data------------------------------------')
     '''
@@ -249,11 +269,13 @@ if __name__ == '__main__':
     DIM_FF = 256
     DROPOUT = 0.1
 
-    check_positional_encoding()
-    check_scale_dot_product_attention()
-    check_multi_head_attention()
-    check_encoder_layer()
-    check_decoder_layer()
-    check_transformer()
-    check_data()
-    check_translate()
+    # check_positional_encoding()
+    # check_scale_dot_product_attention()
+    # check_multi_head_attention()
+    # check_encoder_layer()
+    # check_decoder_layer()
+    # check_transformer()
+    # check_data()
+    # check_translate()
+
+    check_padding_mask()
