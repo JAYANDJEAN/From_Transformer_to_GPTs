@@ -11,3 +11,6 @@ modelsummary
 evaluate
 tqdm
 numpy
+spacy
+torchdata
+portalocker

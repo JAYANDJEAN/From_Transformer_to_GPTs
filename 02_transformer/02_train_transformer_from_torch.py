@@ -3,26 +3,20 @@ from timeit import default_timer as timer
 from models import TransformerTorch
 from utils import generate_mask, prepare_dataset, generate, SPECIAL_IDS, src_lang, tgt_lang
 from tqdm import tqdm
-import warnings
 import yaml
 import os
 
-warnings.filterwarnings("ignore")
-if torch.cuda.is_available():
-    device = 'cuda'
-elif torch.backends.mps.is_available():
-    device = 'mps'
-else:
-    device = 'cpu'
+# if torch.cuda.is_available():
+#     device = 'cuda'
+# elif torch.backends.mps.is_available():
+#     device = 'mps'
+# else:
+#     device = 'cpu'
 # DEVICE = torch.device(device)
 DEVICE = 'cpu'
-print(device)
 
 
-# TransformerScratch 可在三种设备上跑
 # TransformerTorch 不能在mps设备上跑，
-# The operator 'aten::_nested_tensor_from_mask_left_aligned' is not currently implemented for the MPS device.
-
 def train_and_translate():
     def _epoch(model, dataloader, tp):
         if tp == 'train':
@@ -92,12 +86,18 @@ def train_and_translate():
             print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
                    f"Val loss: {val_loss:.3f}, "
                    f"Epoch time = {(end_time - start_time):.3f}s"))
-
+    '''
+    A trendy girl talking on her cellphone while gliding slowly down the street.
+    A woman with a large purse is walking by a gate.
+    
+    A bald girl talks on a cellphone while talking to her cellphone .
+    A woman with a large purse is walking past a gate .
+    '''
     src_sentences = [
-        "Ein kleines Mädchen klettert in ein Spielhaus aus Holz.",
-        "Ein Mann in einem blauen Hemd steht auf einer Leiter und putzt ein Fenster."
+        "Ein schickes Mädchen spricht mit dem Handy während sie langsam die Straße entlangschwebt.",
+        "Eine Frau mit einer großen Geldbörse geht an einem Tor vorbei."
     ]
-    transformer.load_state_dict(torch.load(f'{save_dir}/translation_de_to_en.pth'))
+    transformer.load_state_dict(torch.load(f'{save_dir}/translation_de_to_en.pth', map_location="cpu"))
     print("Translated sentence:", generate(transformer, src_sentences, text_to_indices, vocabs, DEVICE))
 
 
