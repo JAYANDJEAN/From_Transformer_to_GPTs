@@ -9,8 +9,11 @@ from torch.utils.data import DataLoader
 from tokenizers import Tokenizer
 from torch.nn.utils.rnn import pad_sequence
 
+'''
+一般流程是，1.在数据集上训练一个tokenizer
+'''
 
-# TransformerTorch 不能在mps设备上跑，
+
 def train_and_translate():
     def collate_fn(batch):
         src_batch, tgt_batch = [], []
