@@ -6,12 +6,17 @@ from models import (PositionalEncoding, ScaleDotProductAttention,
                     MultiHeadAttention, EncoderLayer, DecoderLayer,
                     TransformerScratch, TransformerTorch)
 from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang, generate
-import warnings
 import torch.nn as nn
+from tokenizers import Tokenizer
+import sentencepiece as spm
 
-warnings.filterwarnings("ignore")
+import warnings
 
 
+# warnings.filterwarnings("ignore")
+
+
+# ----------------------transformer scratch----------------------
 def check_positional_encoding():
     def positional_encoding_loop(max_len, d_model):
         pos_enc = np.zeros((max_len, d_model))
@@ -137,6 +142,8 @@ def check_transformer():
     assert out2.shape == (BATCH_SIZE, TGT_SEQ_LEN, tgt_vocab_size)
 
 
+# ----------------------transformer torch----------------------
+
 def check_padding_mask():
     encoder_layer = nn.TransformerEncoderLayer(d_model=D_MODEL, nhead=N_HEAD, batch_first=True)
     text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
@@ -160,13 +167,14 @@ def check_data():
     print('--------------------------data------------------------------------')
     '''
     text_to_indices: 将文本转成编号序列
-    vocabs: 字典
+    vocabs: 字典 src_size: 19214 tgt_size: 10837
     pip install -U spacy
     python -m spacy download en_core_web_sm
     python -m spacy download de_core_news_sm
     '''
     text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
     src_size, tgt_size = len(vocabs[src_lang]), len(vocabs[tgt_lang])
+    print(src_size, tgt_size)
     _, (src, tgt) = next(enumerate(train_loader))
     print('src size: ', src.shape)
     print('tgt size: ', tgt.shape)
@@ -245,18 +253,35 @@ def check_data():
     print(memory.shape)  # (N, S, E)
 
 
-# def check_translate():
-#     src_ = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
-#     t2i, voc, train_loader, eval_loader = prepare_dataset(128)
-#     transformer = TransformerTorch(num_encoder_layers=3,
-#                                    num_decoder_layers=3,
-#                                    d_model=512,
-#                                    n_head=8,
-#                                    src_vocab_size=len(voc[src_lang]),
-#                                    tgt_vocab_size=len(voc[tgt_lang])
-#                                    ).to('cpu')
-#
-#     print("Translated sentence:", generate(transformer, src_, t2i, voc, 'cpu'))
+def check_tokenizers():
+    tokenizer_de = Tokenizer.from_file("./bpe_tokenizer/token-de.json")
+    tokenizer_en = Tokenizer.from_file("./bpe_tokenizer/token-en.json")
+
+    print('de vocab size: ', tokenizer_de.get_vocab_size())
+    output = tokenizer_de.encode("Ein kleines Mädchen klettert in ein Spielhaus aus Holz.")
+    print([tokenizer_de.decode([i]) for i in output.ids])
+
+    print('en vocab size: ', tokenizer_en.get_vocab_size())
+    output = tokenizer_en.encode("A man in a blue shirt is standing on a ladder cleaning a window.")
+    print([tokenizer_en.decode([i]) for i in output.ids])
+
+    print()
+
+
+def check_sentencepiece():
+    sp_de = spm.SentencePieceProcessor()
+    sp_en = spm.SentencePieceProcessor()
+
+    sp_de.load('./bpe_tokenizer/sp-de.model')
+    sp_en.load('./bpe_tokenizer/sp-en.model')
+
+    print('de vocab size: ', sp_de.vocab_size())
+    output = sp_de.encode_as_ids("Ein kleines Mädchen klettert in ein Spielhaus aus Holz.")
+    print([sp_de.decode_ids(i) for i in output])
+
+    print('en vocab size: ', sp_en.vocab_size())
+    output = sp_en.encode_as_ids("A man in a blue shirt is standing on a ladder cleaning a window.")
+    print([sp_en.decode_ids(i) for i in output])
 
 
 if __name__ == '__main__':
@@ -278,4 +303,4 @@ if __name__ == '__main__':
     # check_data()
     # check_translate()
 
-    check_padding_mask()
+    check_sentencepiece()
