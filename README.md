@@ -12,6 +12,7 @@ This project covers the following tasks:
 
 ## Tokenizers
 
+1. 学习minbpe的代码
 1. Training a Byte Pair Encoding (BPE) Tokenizer using the Hugging Face `tokenizers` library.
 
 ## Transformers
@@ -32,6 +33,7 @@ This project covers the following tasks:
 1. Exploring CodeLLaMA
 
 ## References
+1. [minbpe GitHub](https://github.com/karpathy/minbpe)
 1. [Hugging Face Tokenizers](https://huggingface.co/docs/tokenizers/index)
 2. [Hyunwoongko's Transformer](https://github.com/hyunwoongko/transformer)
 3. [PyTorch Translation Tutorial](https://pytorch.org/tutorials/beginner/translation_transformer.html)
