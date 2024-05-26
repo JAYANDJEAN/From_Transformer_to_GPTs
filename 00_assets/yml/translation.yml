@@ -1,5 +1,6 @@
 model_name: torch
-model_version: v1
+device: cpu
+
 batch_size: 128
 num_epochs: 10
 num_encode: 3
@@ -7,5 +8,6 @@ num_decode: 3
 d_model: 512
 n_head: 8
 lr: 0.0001
-betas: (0.9, 0.98)
-eps: 1e-9
+beta_min: 0.9
+beta_max: 0.98
+eps: 0.000000001

@@ -253,19 +253,25 @@ def check_data():
     print(memory.shape)  # (N, S, E)
 
 
+# 对比后选择tokenizers
 def check_tokenizers():
     tokenizer_de = Tokenizer.from_file("./bpe_tokenizer/token-de.json")
     tokenizer_en = Tokenizer.from_file("./bpe_tokenizer/token-en.json")
+    text_en = "A man in a blue shirt is standing on a ladder cleaning a window."
 
     print('de vocab size: ', tokenizer_de.get_vocab_size())
     output = tokenizer_de.encode("Ein kleines Mädchen klettert in ein Spielhaus aus Holz.")
     print([tokenizer_de.decode([i]) for i in output.ids])
 
     print('en vocab size: ', tokenizer_en.get_vocab_size())
-    output = tokenizer_en.encode("A man in a blue shirt is standing on a ladder cleaning a window.")
+    output = tokenizer_en.encode(text_en)
     print([tokenizer_en.decode([i]) for i in output.ids])
 
-    print()
+    print(tokenizer_de.id_to_token(0))
+    print(tokenizer_de.id_to_token(1))
+    print(tokenizer_de.id_to_token(2))
+    print(tokenizer_de.id_to_token(3))
+    print(tokenizer_de.token_to_id("<eos>"))
 
 
 def check_sentencepiece():
@@ -282,6 +288,11 @@ def check_sentencepiece():
     print('en vocab size: ', sp_en.vocab_size())
     output = sp_en.encode_as_ids("A man in a blue shirt is standing on a ladder cleaning a window.")
     print([sp_en.decode_ids(i) for i in output])
+
+    print(sp_de.bos_id())
+    print(sp_de.eos_id())
+    print(sp_de.pad_id())
+    print(sp_de.unk_id())
 
 
 if __name__ == '__main__':

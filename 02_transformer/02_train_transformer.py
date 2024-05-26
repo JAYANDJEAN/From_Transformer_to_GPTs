@@ -1,42 +1,53 @@
 import torch
 from timeit import default_timer as timer
 from models import TransformerTorch
-from utils import generate_mask, prepare_dataset, generate, SPECIAL_IDS, src_lang, tgt_lang
+from utils import generate_mask, generate, TextDataset
 from tqdm import tqdm
 import yaml
 import os
-
-# if torch.cuda.is_available():
-#     device = 'cuda'
-# elif torch.backends.mps.is_available():
-#     device = 'mps'
-# else:
-#     device = 'cpu'
-# DEVICE = torch.device(device)
-DEVICE = 'cpu'
+from torch.utils.data import DataLoader
+from tokenizers import Tokenizer
+from torch.nn.utils.rnn import pad_sequence
 
 
 # TransformerTorch 不能在mps设备上跑，
 def train_and_translate():
+    def collate_fn(batch):
+        src_batch, tgt_batch = [], []
+
+        for de_text, en_text in batch:
+            output_de = tokenizer_de.encode(de_text)
+            output_en = tokenizer_en.encode(en_text)
+            src_batch.append(
+                torch.as_tensor([tokenizer_de.token_to_id("<bos>")] +
+                                output_de.ids +
+                                [tokenizer_de.token_to_id("<eos>")])
+            )
+            tgt_batch.append(
+                torch.as_tensor([tokenizer_en.token_to_id("<bos>")] +
+                                output_en.ids +
+                                [tokenizer_en.token_to_id("<eos>")])
+            )
+
+        src_batch = pad_sequence(src_batch, padding_value=tokenizer_de.token_to_id("<pad>"), batch_first=True)
+        tgt_batch = pad_sequence(tgt_batch, padding_value=tokenizer_en.token_to_id("<bos>"), batch_first=True)
+        return src_batch, tgt_batch
+
     def _epoch(model, dataloader, tp):
         if tp == 'train':
             model.train()
         elif tp == 'eval':
             model.eval()
         losses = 0
-        optimizer = torch.optim.Adam(transformer.parameters(),
-                                     lr=config['lr'],
-                                     betas=eval(config['betas']),
-                                     eps=eval(config['eps']))
-        loss_fn = torch.nn.CrossEntropyLoss(ignore_index=SPECIAL_IDS['<pad>'])
+
         for src, tgt in dataloader:
-            src = src.to(DEVICE)
-            tgt_input = tgt[:, :-1].to(DEVICE)
-            tgt_out = tgt[:, 1:].to(DEVICE)
-            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(DEVICE)
-            tgt_mask = generate_mask(tgt_input.shape[1]).to(DEVICE)
-            src_padding_mask = (src == SPECIAL_IDS['<pad>']).to(DEVICE)
-            tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>']).to(DEVICE)
+            src = src.to(device)
+            tgt_input = tgt[:, :-1].to(device)
+            tgt_out = tgt[:, 1:].to(device)
+            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
+            tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
+            src_padding_mask = (src == tokenizer_de.token_to_id("<pad>")).to(device)
+            tgt_padding_mask = (tgt_input == tokenizer_en.token_to_id("<pad>")).to(device)
 
             tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
                                 src_padding_mask, tgt_padding_mask, src_padding_mask)
@@ -62,21 +73,40 @@ def train_and_translate():
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(config['batch_size'])
+    device = config['device']
+
+    tokenizer_de = Tokenizer.from_file("./bpe_tokenizer/token-de.json")
+    tokenizer_en = Tokenizer.from_file("./bpe_tokenizer/token-en.json")
+
+    train_loader = DataLoader(TextDataset(dt='train'),
+                              batch_size=config['batch_size'],
+                              collate_fn=collate_fn,
+                              shuffle=True)
+    val_loader = DataLoader(TextDataset(dt='val'),
+                            batch_size=config['batch_size'],
+                            collate_fn=collate_fn,
+                            shuffle=False)
+
     transformer = TransformerTorch(num_encoder_layers=config['num_encode'],
                                    num_decoder_layers=config['num_decode'],
                                    d_model=config['d_model'],
                                    n_head=config['n_head'],
-                                   src_vocab_size=len(vocabs[src_lang]),
-                                   tgt_vocab_size=len(vocabs[tgt_lang])
-                                   ).to(DEVICE)
+                                   src_vocab_size=tokenizer_de.get_vocab_size(),
+                                   tgt_vocab_size=tokenizer_en.get_vocab_size(),
+                                   ).to(device)
+    optimizer = torch.optim.Adam(transformer.parameters(),
+                                 lr=config['lr'],
+                                 betas=(config['beta_min'], config['beta_max']),
+                                 eps=config['eps'])
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer_en.token_to_id("<pad>"))
     min_train_loss = float('inf')
 
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
-        with tqdm(total=len(list(train_loader)) + len(list(eval_loader)), desc=f'Epoch {epoch}', unit='batch') as pbar:
+        with tqdm(total=len(list(train_loader)) + len(list(val_loader)),
+                  desc=f'Epoch {epoch}', unit='batch') as pbar:
             train_loss = _epoch(transformer, train_loader, 'train')
-            val_loss = _epoch(transformer, eval_loader, 'eval')
+            val_loss = _epoch(transformer, val_loader, 'eval')
 
             if train_loss < min_train_loss:
                 min_train_loss = train_loss
@@ -95,7 +125,7 @@ def train_and_translate():
         "Eine Frau mit einer großen Geldbörse geht an einem Tor vorbei."
     ]
     transformer.load_state_dict(torch.load(f'{save_dir}/translation_de_to_en.pth', map_location="cpu"))
-    print("Translated sentence:", generate(transformer, src_sentences, text_to_indices, vocabs, DEVICE))
+    # print("Translated sentence:", generate(transformer, src_sentences, text_to_indices, vocabs, DEVICE))
 
 
 train_and_translate()
