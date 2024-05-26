@@ -245,18 +245,18 @@ def check_data():
     print(memory.shape)  # (N, S, E)
 
 
-def check_translate():
-    src_ = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
-    t2i, voc, train_loader, eval_loader = prepare_dataset(128)
-    transformer = TransformerTorch(num_encoder_layers=3,
-                                   num_decoder_layers=3,
-                                   d_model=512,
-                                   n_head=8,
-                                   src_vocab_size=len(voc[src_lang]),
-                                   tgt_vocab_size=len(voc[tgt_lang])
-                                   ).to('cpu')
-
-    print("Translated sentence:", generate(transformer, src_, t2i, voc, 'cpu'))
+# def check_translate():
+#     src_ = "Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche."
+#     t2i, voc, train_loader, eval_loader = prepare_dataset(128)
+#     transformer = TransformerTorch(num_encoder_layers=3,
+#                                    num_decoder_layers=3,
+#                                    d_model=512,
+#                                    n_head=8,
+#                                    src_vocab_size=len(voc[src_lang]),
+#                                    tgt_vocab_size=len(voc[tgt_lang])
+#                                    ).to('cpu')
+#
+#     print("Translated sentence:", generate(transformer, src_, t2i, voc, 'cpu'))
 
 
 if __name__ == '__main__':
