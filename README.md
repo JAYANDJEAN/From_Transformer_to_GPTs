@@ -16,7 +16,7 @@
 
 ## BERT and GPT
 
-1. 参考 [Trainer](https://huggingface.co/docs/transformers/model_memory_anatomy)、[Masked language modeling](https://huggingface.co/docs/transformers/tasks/masked_language_modeling)、[Causal language modeling](https://huggingface.co/docs/transformers/tasks/language_modeling)，学习`transformers`下的trainer
+1. 参考 [Trainer](https://huggingface.co/docs/transformers/model_memory_anatomy)、[Masked language modeling](https://huggingface.co/docs/transformers/tasks/masked_language_modeling)、[Causal language modeling](https://huggingface.co/docs/transformers/tasks/language_modeling)，学习`transformers`下的trainer。
 2. 利用预训练模型 [roberta](https://huggingface.co/FacebookAI/roberta-base) + decoder，实现一个生成任务。
 
 ## LLaMa
