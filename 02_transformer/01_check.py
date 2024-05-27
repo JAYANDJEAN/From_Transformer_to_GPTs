@@ -269,6 +269,16 @@ def check_sentencepiece():
     print(sp_de.unk_id())
 
 
+def check_shape():
+    key_padding_mask = torch.randn(BATCH_SIZE * N_HEAD, 1, SRC_SEQ_LEN)
+    attn_mask = torch.randn(SRC_SEQ_LEN, SRC_SEQ_LEN)
+    out = attn_mask + key_padding_mask
+    print(out.shape)
+    score = torch.randn(BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, SRC_SEQ_LEN)
+    out = score + out.view(BATCH_SIZE, N_HEAD, SRC_SEQ_LEN, SRC_SEQ_LEN)
+    print(out.shape)
+
+
 if __name__ == '__main__':
     MAX_LEN = 100
     D_MODEL = 512
@@ -279,13 +289,4 @@ if __name__ == '__main__':
     DIM_FF = 256
     DROPOUT = 0.1
 
-    # check_positional_encoding()
-    # check_scale_dot_product_attention()
-    # check_multi_head_attention()
-    # check_encoder_layer()
-    # check_decoder_layer()
-    # check_transformer()
-    # check_data()
-    # check_translate()
-
-    check_pipeline()
+    check_shape()

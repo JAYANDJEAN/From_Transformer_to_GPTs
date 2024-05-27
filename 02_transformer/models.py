@@ -97,6 +97,26 @@ class MultiHeadAttention(nn.Module):
         out = out.transpose(1, 2).contiguous().view(out.shape[0], -1, self.n_head * self.d_tensor)
         return self.w_o(out)
 
+    def merge_masks(self, attn_mask: Optional[Tensor], key_padding_mask: Optional[Tensor]):
+        r"""
+        Args:
+            attn_mask: attention mask of shape ``(seq_len, seq_len)``
+            key_padding_mask: padding mask of shape ``(batch_size, seq_len)``
+        Returns:
+            merged_mask: merged mask
+        """
+
+        bsz, src_len = key_padding_mask.shape
+
+        if key_padding_mask is not None:
+            key_padding_mask = key_padding_mask.view(bsz, 1, 1, src_len). \
+                expand(-1, self.n_head, -1, -1).reshape(bsz * self.n_head, 1, src_len)
+            if attn_mask is None:
+                attn_mask = key_padding_mask
+            else:
+                attn_mask = attn_mask + key_padding_mask
+        return attn_mask
+
 
 class FeedForward(nn.Module):
     def __init__(self, dim_feedforward: int, d_model: int, dropout: float = 0.1):
