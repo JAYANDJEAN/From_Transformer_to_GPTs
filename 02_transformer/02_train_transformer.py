@@ -1,41 +1,14 @@
 import torch
 from timeit import default_timer as timer
 from models import TransformerTorch
-from utils import generate_mask, generate, TextDataset
+from utils import generate_mask, generate, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
 from tqdm import tqdm
 import yaml
 import os
 from torch.utils.data import DataLoader
-from tokenizers import Tokenizer
-from torch.nn.utils.rnn import pad_sequence
-
-'''
-一般流程是，1.在数据集上训练一个tokenizer
-'''
 
 
 def train_and_translate():
-    def collate_fn(batch):
-        src_batch, tgt_batch = [], []
-
-        for de_text, en_text in batch:
-            output_de = tokenizer_de.encode(de_text)
-            output_en = tokenizer_en.encode(en_text)
-            src_batch.append(
-                torch.as_tensor([tokenizer_de.token_to_id("<bos>")] +
-                                output_de.ids +
-                                [tokenizer_de.token_to_id("<eos>")])
-            )
-            tgt_batch.append(
-                torch.as_tensor([tokenizer_en.token_to_id("<bos>")] +
-                                output_en.ids +
-                                [tokenizer_en.token_to_id("<eos>")])
-            )
-
-        src_batch = pad_sequence(src_batch, padding_value=tokenizer_de.token_to_id("<pad>"), batch_first=True)
-        tgt_batch = pad_sequence(tgt_batch, padding_value=tokenizer_en.token_to_id("<bos>"), batch_first=True)
-        return src_batch, tgt_batch
-
     def _epoch(model, dataloader, tp):
         if tp == 'train':
             model.train()
@@ -49,9 +22,8 @@ def train_and_translate():
             tgt_out = tgt[:, 1:].to(device)
             src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
             tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
-            src_padding_mask = (src == tokenizer_de.token_to_id("<pad>")).to(device)
-            tgt_padding_mask = (tgt_input == tokenizer_en.token_to_id("<pad>")).to(device)
-
+            src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
+            tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
             tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
                                 src_padding_mask, tgt_padding_mask, src_padding_mask)
 
@@ -78,9 +50,6 @@ def train_and_translate():
 
     device = config['device']
 
-    tokenizer_de = Tokenizer.from_file("./bpe_tokenizer/token-de.json")
-    tokenizer_en = Tokenizer.from_file("./bpe_tokenizer/token-en.json")
-
     train_loader = DataLoader(TextDataset(dt='train'),
                               batch_size=config['batch_size'],
                               collate_fn=collate_fn,
@@ -94,14 +63,14 @@ def train_and_translate():
                                    num_decoder_layers=config['num_decode'],
                                    d_model=config['d_model'],
                                    n_head=config['n_head'],
-                                   src_vocab_size=tokenizer_de.get_vocab_size(),
-                                   tgt_vocab_size=tokenizer_en.get_vocab_size(),
+                                   src_vocab_size=tokenizers[src_lang].get_vocab_size(),
+                                   tgt_vocab_size=tokenizers[tgt_lang].get_vocab_size(),
                                    ).to(device)
     optimizer = torch.optim.Adam(transformer.parameters(),
                                  lr=config['lr'],
                                  betas=(config['beta_min'], config['beta_max']),
                                  eps=config['eps'])
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer_en.token_to_id("<pad>"))
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizers[tgt_lang].token_to_id("<pad>"))
     min_train_loss = float('inf')
 
     for epoch in range(1, config['num_epochs'] + 1):
@@ -128,7 +97,8 @@ def train_and_translate():
         "Eine Frau mit einer großen Geldbörse geht an einem Tor vorbei."
     ]
     transformer.load_state_dict(torch.load(f'{save_dir}/translation_de_to_en.pth', map_location="cpu"))
-    # print("Translated sentence:", generate(transformer, src_sentences, text_to_indices, vocabs, DEVICE))
+    print("Translated sentence:", generate(transformer, src_sentences, device))
 
 
-train_and_translate()
+if __name__ == '__main__':
+    train_and_translate()

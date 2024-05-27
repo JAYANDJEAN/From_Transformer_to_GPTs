@@ -1,20 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from torch.utils.data import DataLoader
 from modelsummary import summary
+from tokenizers import Tokenizer
+import sentencepiece as spm
 from models import (PositionalEncoding, ScaleDotProductAttention,
                     MultiHeadAttention, EncoderLayer, DecoderLayer,
                     TransformerScratch, TransformerTorch)
-from utils import generate_mask, prepare_dataset, SPECIAL_IDS, src_lang, tgt_lang, generate
-import torch.nn as nn
-from tokenizers import Tokenizer
-import sentencepiece as spm
-
+from utils import generate_mask, src_lang, tgt_lang, TextDataset, tokenizers, collate_fn
 import warnings
 
 
 # warnings.filterwarnings("ignore")
-
 
 # ----------------------transformer scratch----------------------
 def check_positional_encoding():
@@ -144,49 +142,29 @@ def check_transformer():
 
 # ----------------------transformer torch----------------------
 
-def check_padding_mask():
-    encoder_layer = nn.TransformerEncoderLayer(d_model=D_MODEL, nhead=N_HEAD, batch_first=True)
-    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
 
-    _, (src, tgt) = next(enumerate(train_loader))
-    seq_len = src.shape[1]
-    src_emb = torch.randn(BATCH_SIZE, seq_len, D_MODEL)
-    src_mask = torch.zeros((seq_len, seq_len))
-    src_padding_mask = (src == SPECIAL_IDS['<pad>'])
-
-    print(src.shape)
-    print(src_padding_mask.shape)
-    # 很明显，加与不加src_padding_mask是有区别的，但对最终的结果影响大吗？
-    out = encoder_layer(src_emb, src_mask, src_padding_mask)
-    print(out[0, 0, 0:5])
-    out = encoder_layer(src_emb, src_mask, None)
-    print(out[0, 0, 0:5])
-
-
-def check_data():
+def check_pipeline():
     print('--------------------------data------------------------------------')
     '''
-    text_to_indices: 将文本转成编号序列
     vocabs: 字典 src_size: 19214 tgt_size: 10837
-    pip install -U spacy
-    python -m spacy download en_core_web_sm
-    python -m spacy download de_core_news_sm
+    原始教程里用spacy做tokenizer，代码较为繁琐。这里用hf的tokenizers做了一个tokenizer，更加方便。
     '''
-    text_to_indices, vocabs, train_loader, eval_loader = prepare_dataset(BATCH_SIZE)
-    src_size, tgt_size = len(vocabs[src_lang]), len(vocabs[tgt_lang])
+    train_loader = DataLoader(TextDataset(dt='train'),
+                              batch_size=BATCH_SIZE,
+                              collate_fn=collate_fn,
+                              shuffle=False)
+    src_size = tokenizers[src_lang].get_vocab_size()
+    tgt_size = tokenizers[tgt_lang].get_vocab_size()
     print(src_size, tgt_size)
     _, (src, tgt) = next(enumerate(train_loader))
     print('src size: ', src.shape)
     print('tgt size: ', tgt.shape)
     print('src first sentence:')
     print(src[0, :])
-    print(text_to_indices['de']('Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche.'))
+    print(tokenizers[src_lang].encode('Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche.').ids)
     print('tgt first sentence:')
     print(tgt[0, :])
-    print(text_to_indices['en']('Two young, White males are outside near many bushes.'))
-    print('english vocab:')
-    for i in range(5):
-        print(i, vocabs['en'].lookup_token(i))
+    print(tokenizers[tgt_lang].encode('Two young, White males are outside near many bushes.').ids)
 
     '''
     去尾、掐头
@@ -219,8 +197,8 @@ def check_data():
         '''
     src_mask = torch.zeros((src.shape[1], src.shape[1]))
     tgt_mask = generate_mask(tgt_input.shape[1])
-    src_padding_mask = (src == SPECIAL_IDS['<pad>'])
-    tgt_padding_mask = (tgt_input == SPECIAL_IDS['<pad>'])
+    src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>"))
+    tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>"))
     print(src_mask.shape)  # (S, S)
     print(tgt_mask.shape)  # (T, T)
     print(src_padding_mask.shape)  # (N, S)
@@ -247,10 +225,6 @@ def check_data():
     print(logits_predict[0, :, :].shape)
     token_predict = torch.argmax(logits_predict[0, :, :], dim=1)
     print(token_predict)
-
-    print('----------------------------eval-------------------------------')
-    memory = transformer.encode(src, src_mask)
-    print(memory.shape)  # (N, S, E)
 
 
 # 对比后选择tokenizers
@@ -314,4 +288,4 @@ if __name__ == '__main__':
     # check_data()
     # check_translate()
 
-    check_sentencepiece()
+    check_pipeline()
