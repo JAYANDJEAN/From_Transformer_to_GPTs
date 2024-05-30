@@ -43,6 +43,8 @@ def train_model(config):
                 loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
                 losses += loss.item()
 
+            pbar.update(1)
+
         return losses / len(list(dataloader))
 
     assert torch.cuda.is_available(), "Training on CPU is not supported"
