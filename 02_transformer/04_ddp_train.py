@@ -76,8 +76,6 @@ def train_model(config):
                              tgt_vocab_size=tokenizers[tgt_lang].get_vocab_size(),
                              ).to(device)
 
-    # Convert the model to DistributedDataParallel
-    # Here we can also specify the bucket_cap_mb parameter to control the size of the buckets
     model = DistributedDataParallel(model, device_ids=[config.local_rank])
     optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, eps=1e-9)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizers[tgt_lang].token_to_id("<pad>"),
@@ -103,10 +101,7 @@ def train_model(config):
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
-
-    # Disable tokenizers parallelism (this is to avoid deadlocks when creating the tokenizers on multiple GPUs)
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_epochs', type=int, default=10)
