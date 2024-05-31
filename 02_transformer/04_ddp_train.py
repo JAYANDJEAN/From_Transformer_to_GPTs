@@ -71,7 +71,7 @@ def train_model(config):
                                    ).to(device)
 
     transformer = DistributedDataParallel(transformer, device_ids=[config.local_rank])
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, eps=1e-9)
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=config.lr, eps=1e-9)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizers[tgt_lang].token_to_id("<pad>"),
                                         label_smoothing=0.1).to(device)
 
