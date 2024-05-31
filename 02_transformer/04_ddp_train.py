@@ -7,11 +7,11 @@ from timeit import default_timer as timer
 import warnings
 from tqdm import tqdm
 from pathlib import Path
-from models import TransformerTorch
-import yaml
-import os
-from utils import generate_mask, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
 import argparse
+import os
+
+from utils import generate_mask, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
+from models import TransformerTorch
 
 
 def train_model(config):
@@ -20,43 +20,37 @@ def train_model(config):
             model.train()
         elif tp == 'eval':
             model.eval()
-        losses = 0
+        epoch_loss = 0
 
-        for src, tgt in dataloader:
-            src = src.to(device)
-            tgt_input = tgt[:, :-1].to(device)
-            tgt_out = tgt[:, 1:].to(device)
-            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
-            tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
-            src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
-            tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
-            tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                src_padding_mask, tgt_padding_mask, src_padding_mask)
-
-            if tp == 'train':
-                optimizer.zero_grad()
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                loss.backward()
-                optimizer.step()
-                losses += loss.item()
-            elif tp == 'eval':
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                losses += loss.item()
-
-            pbar.update(1)
-
-        return losses / len(list(dataloader))
+        with tqdm(total=len(list(dataloader)), desc=f'{tp}: Epoch {epoch}', unit='batch') as pbar:
+            for src, tgt in dataloader:
+                src = src.to(device)
+                tgt_input = tgt[:, :-1].to(device)
+                tgt_out = tgt[:, 1:].to(device)
+                src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
+                tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
+                src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
+                tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
+                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
+                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
+                if tp == 'train':
+                    optimizer.zero_grad()
+                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                    loss.backward()
+                    optimizer.step()
+                    epoch_loss += loss.item()
+                elif tp == 'eval':
+                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                    epoch_loss += loss.item()
+                pbar.update(1)
+        return epoch_loss / len(list(dataloader))
 
     assert torch.cuda.is_available(), "Training on CPU is not supported"
     device = torch.device("cuda")
     print(f"GPU {config.local_rank} - Using device: {device}")
 
-    with open('../00_assets/yml/local_settings.yml', 'r') as file:
-        setting = yaml.safe_load(file)
-    save_dir = os.path.join(setting['model_path'], 'translation')
+    save_dir = "./models"
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-
-    print(f"GPU {config.local_rank} - Loading dataset...")
 
     train_loader = DataLoader(TextDataset(dt='train'),
                               batch_size=config.batch_size,
@@ -68,15 +62,15 @@ def train_model(config):
                             collate_fn=collate_fn,
                             shuffle=False)
 
-    model = TransformerTorch(num_encoder_layers=3,
-                             num_decoder_layers=3,
-                             d_model=config.d_model,
-                             n_head=config.n_head,
-                             src_vocab_size=tokenizers[src_lang].get_vocab_size(),
-                             tgt_vocab_size=tokenizers[tgt_lang].get_vocab_size(),
-                             ).to(device)
+    transformer = TransformerTorch(num_encoder_layers=3,
+                                   num_decoder_layers=3,
+                                   d_model=config.d_model,
+                                   n_head=config.n_head,
+                                   src_vocab_size=tokenizers[src_lang].get_vocab_size(),
+                                   tgt_vocab_size=tokenizers[tgt_lang].get_vocab_size(),
+                                   ).to(device)
 
-    model = DistributedDataParallel(model, device_ids=[config.local_rank])
+    transformer = DistributedDataParallel(transformer, device_ids=[config.local_rank])
     optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, eps=1e-9)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizers[tgt_lang].token_to_id("<pad>"),
                                         label_smoothing=0.1).to(device)
@@ -84,19 +78,18 @@ def train_model(config):
     for epoch in range(config.num_epochs):
         torch.cuda.empty_cache()
         start_time = timer()
-        with tqdm(total=len(list(train_loader)) + len(list(val_loader)),
-                  desc=f'Epoch {epoch}', unit='batch') as pbar:
-            train_loss = _epoch(model, train_loader, 'train')
-            val_loss = _epoch(model, val_loader, 'eval')
 
-            end_time = timer()
-            print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-                   f"Val loss: {val_loss:.3f}, "
-                   f"Epoch time = {(end_time - start_time):.3f}s"))
+        train_loss = _epoch(transformer, train_loader, 'train')
+        val_loss = _epoch(transformer, val_loader, 'eval')
+
+        end_time = timer()
+        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
+               f"Val loss: {val_loss:.3f}, "
+               f"Epoch time = {(end_time - start_time):.3f}s"))
 
         # Only run validation and checkpoint saving on the rank 0 node
         if config.global_rank == 0:
-            torch.save(model.state_dict(), f'{save_dir}/translation_{epoch}.pth')
+            torch.save(transformer.state_dict(), f'{save_dir}/translation_{epoch}.pth')
 
 
 if __name__ == '__main__':

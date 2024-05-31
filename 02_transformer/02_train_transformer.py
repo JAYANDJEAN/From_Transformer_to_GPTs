@@ -14,31 +14,30 @@ def train_and_translate():
             model.train()
         elif tp == 'eval':
             model.eval()
-        losses = 0
+        epoch_loss = 0
 
-        for src, tgt in dataloader:
-            src = src.to(device)
-            tgt_input = tgt[:, :-1].to(device)
-            tgt_out = tgt[:, 1:].to(device)
-            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
-            tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
-            src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
-            tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
-            tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                src_padding_mask, tgt_padding_mask, src_padding_mask)
-
-            if tp == 'train':
-                optimizer.zero_grad()
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                loss.backward()
-                optimizer.step()
-                losses += loss.item()
-            elif tp == 'eval':
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                losses += loss.item()
-            pbar.update(1)
-
-        return losses / len(list(dataloader))
+        with tqdm(total=len(list(dataloader)), desc=f'{tp}: Epoch {epoch}', unit='batch') as pbar:
+            for src, tgt in dataloader:
+                src = src.to(device)
+                tgt_input = tgt[:, :-1].to(device)
+                tgt_out = tgt[:, 1:].to(device)
+                src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
+                tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
+                src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
+                tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
+                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
+                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
+                if tp == 'train':
+                    optimizer.zero_grad()
+                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                    loss.backward()
+                    optimizer.step()
+                    epoch_loss += loss.item()
+                elif tp == 'eval':
+                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                    epoch_loss += loss.item()
+                pbar.update(1)
+        return epoch_loss / len(list(dataloader))
 
     with open('../00_assets/yml/translation.yml', 'r') as file:
         config = yaml.safe_load(file)
@@ -49,7 +48,6 @@ def train_and_translate():
         os.makedirs(save_dir)
 
     device = config['device']
-
     train_loader = DataLoader(TextDataset(dt='train'),
                               batch_size=config['batch_size'],
                               collate_fn=collate_fn,
@@ -58,7 +56,6 @@ def train_and_translate():
                             batch_size=config['batch_size'],
                             collate_fn=collate_fn,
                             shuffle=False)
-
     transformer = TransformerTorch(num_encoder_layers=config['num_encode'],
                                    num_decoder_layers=config['num_decode'],
                                    d_model=config['d_model'],
@@ -75,19 +72,15 @@ def train_and_translate():
 
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
-        with tqdm(total=len(list(train_loader)) + len(list(val_loader)),
-                  desc=f'Epoch {epoch}', unit='batch') as pbar:
-            train_loss = _epoch(transformer, train_loader, 'train')
-            val_loss = _epoch(transformer, val_loader, 'eval')
-
-            if train_loss < min_train_loss:
-                min_train_loss = train_loss
-
-                torch.save(transformer.state_dict(), f'{save_dir}/translation_de_to_en.pth')
-            end_time = timer()
-            print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-                   f"Val loss: {val_loss:.3f}, "
-                   f"Epoch time = {(end_time - start_time):.3f}s"))
+        train_loss = _epoch(transformer, train_loader, 'train')
+        val_loss = _epoch(transformer, val_loader, 'eval')
+        if train_loss < min_train_loss:
+            min_train_loss = train_loss
+            torch.save(transformer.state_dict(), f'{save_dir}/translation_de_to_en.pth')
+        end_time = timer()
+        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
+               f"Val loss: {val_loss:.3f}, "
+               f"Epoch time = {(end_time - start_time):.3f}s"))
     '''
     A trendy girl talking on her cellphone while gliding slowly down the street.
     A woman with a large purse is walking by a gate.
