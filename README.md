@@ -1,6 +1,6 @@
 # From_Transformer_to_GPTs
 
-一文带你掌握从Tokenization到llama模型的实现。
+一文详解从Tokenization到LLaMA模型的实现。
 
 ## Tokenizers
 
