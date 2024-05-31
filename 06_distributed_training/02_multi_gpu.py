@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from torch.nn import Module
+import argparse
 
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
@@ -36,14 +37,12 @@ def main(rank: int, world_size: int, save_every: int, total_epochs: int, batch_s
                             shuffle=False,
                             sampler=DistributedSampler(DemoDataset(2048))
                             )
-    trainer = Trainer(model, train_data, optimizer, rank, save_every)
+    trainer = MultiTrainer(model, train_data, optimizer, rank, save_every)
     trainer.train(total_epochs)
     destroy_process_group()
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description='simple distributed training job')
     parser.add_argument('--total_epochs', default=10, type=int, help='Total epochs to train the model')
     parser.add_argument('--save_every', default=3, type=int, help='How often to save a snapshot')
