@@ -5,7 +5,6 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.distributed import init_process_group, destroy_process_group
 from timeit import default_timer as timer
 import warnings
-from tqdm import tqdm
 from pathlib import Path
 import argparse
 import os
@@ -22,33 +21,30 @@ def train_model(config):
             model.eval()
         epoch_loss = 0
 
-        with tqdm(total=len(list(dataloader)), desc=f'{tp}: Epoch {epoch}', unit='batch') as pbar:
-            for src, tgt in dataloader:
-                src = src.to(device)
-                tgt_input = tgt[:, :-1].to(device)
-                tgt_out = tgt[:, 1:].to(device)
-                src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
-                tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
-                src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
-                tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
-                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
-                if tp == 'train':
-                    optimizer.zero_grad()
-                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                    loss.backward()
-                    optimizer.step()
-                    epoch_loss += loss.item()
-                elif tp == 'eval':
-                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                    epoch_loss += loss.item()
-                pbar.update(1)
+        for src, tgt in dataloader:
+            src = src.to(device)
+            tgt_input = tgt[:, :-1].to(device)
+            tgt_out = tgt[:, 1:].to(device)
+            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
+            tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
+            src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
+            tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
+            tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
+                                src_padding_mask, tgt_padding_mask, src_padding_mask)
+            if tp == 'train':
+                optimizer.zero_grad()
+                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.item()
+            elif tp == 'eval':
+                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                epoch_loss += loss.item()
+
         return epoch_loss / len(list(dataloader))
 
     assert torch.cuda.is_available(), "Training on CPU is not supported"
     device = torch.device("cuda")
-    print(f"GPU {config.local_rank} - Using device: {device}")
-
     save_dir = "./models"
     Path(save_dir).mkdir(parents=True, exist_ok=True)
 
@@ -83,9 +79,8 @@ def train_model(config):
         val_loss = _epoch(transformer, val_loader, 'eval')
 
         end_time = timer()
-        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-               f"Val loss: {val_loss:.3f}, "
-               f"Epoch time = {(end_time - start_time):.3f}s"))
+        print((f"GPU: {config.local_rank}, Epoch: {epoch}, Train loss: {train_loss:.3f}, "
+               f"Val loss: {val_loss:.3f}, Epoch time: {(end_time - start_time):.3f}s"))
 
         # Only run validation and checkpoint saving on the rank 0 node
         if config.global_rank == 0:
@@ -93,6 +88,7 @@ def train_model(config):
 
 
 if __name__ == '__main__':
+    # torchrun --nnodes=1 --nproc_per_node=2 04_ddp_train.py
     warnings.filterwarnings("ignore")
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     parser = argparse.ArgumentParser()
@@ -115,6 +111,7 @@ if __name__ == '__main__':
         print("Configuration:")
         for key, value in args.__dict__.items():
             print(f"{key:>20}: {value}")
+        print('-' * 50)
 
     # Setup distributed training
     init_process_group(backend='nccl')
