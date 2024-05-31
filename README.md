@@ -1,6 +1,6 @@
 # From_Transformer_to_GPTs
 
-[《From Transformer to GPTs》](https://www.yuque.com/jayandjean/blog/apvlgb0uafo8kd4r?singleDoc#) 一文带你掌握从Tokenization到llama模型的实现。
+一文带你掌握从Tokenization到llama模型的实现。
 
 ## Tokenizers
 
