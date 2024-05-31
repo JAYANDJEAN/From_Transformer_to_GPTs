@@ -28,3 +28,7 @@
 
 1. 参考 [CodeLLaMA GitHub](https://github.com/meta-llama/codellama/tree/main)，了解一下 CodeLLaMA。
 
+## DDP
+
+1. 参考 [ddp-tutorial](https://github.com/pytorch/examples/blob/main/distributed/ddp-tutorial-series/single_gpu.py)，了解DDP机制。
+
