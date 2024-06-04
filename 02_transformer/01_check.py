@@ -220,13 +220,11 @@ def check_pipeline():
     logits_predict = transformer(src, tgt_input, src_mask, tgt_mask,
                                  src_padding_mask, tgt_padding_mask,
                                  src_padding_mask)
-    print('预测单例展示：')
-    # (BATCH_SIZE, TGT_SEQ_LEN, TGT_VOCAB_SIZE)
-    print('logits_predict size: ', logits_predict.shape)
-    print(logits_predict[0, :, :].shape)
+    print('LOGITS SIZE:', logits_predict.shape)  # torch.Size([64, 24, 10000])
     token_predict = torch.argmax(logits_predict, dim=2)
-    print(token_predict.shape)
-    print(token_predict)
+    print('TOKEN SIZE:', token_predict.shape)  # torch.Size([64, 24])
+    print('LOGITS SIZE:', logits_predict.reshape(-1, logits_predict.shape[-1]).shape)  # torch.Size([1536, 10000])
+    print('TGT SIZE:', tgt_out.reshape(-1).shape)  # torch.Size([1536])
 
 
 # 对比后选择tokenizers
