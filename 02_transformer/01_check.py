@@ -221,9 +221,11 @@ def check_pipeline():
                                  src_padding_mask, tgt_padding_mask,
                                  src_padding_mask)
     print('预测单例展示：')
+    # (BATCH_SIZE, TGT_SEQ_LEN, TGT_VOCAB_SIZE)
     print('logits_predict size: ', logits_predict.shape)
     print(logits_predict[0, :, :].shape)
-    token_predict = torch.argmax(logits_predict[0, :, :], dim=1)
+    token_predict = torch.argmax(logits_predict, dim=2)
+    print(token_predict.shape)
     print(token_predict)
 
 
@@ -289,4 +291,4 @@ if __name__ == '__main__':
     DIM_FF = 256
     DROPOUT = 0.1
 
-    check_shape()
+    check_pipeline()
