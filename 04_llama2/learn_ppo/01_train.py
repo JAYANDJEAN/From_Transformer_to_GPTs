@@ -1,15 +1,9 @@
 import os
-import glob
-import time
 from datetime import datetime
-
 import torch
 import numpy as np
-
-import gym
-import roboschool
-
 from PPO import PPO
+import gymnasium as gym
 
 
 ################################### Training ###################################
@@ -17,8 +11,7 @@ def train():
     print("============================================================================================")
 
     ####### initialize environment hyperparameters ######
-    env_name = "RoboschoolWalker2d-v1"
-
+    env_name = "Walker2d-v4"
     has_continuous_action_space = True  # continuous action space; else discrete
 
     max_ep_len = 1000  # max timesteps in one episode
