@@ -1,5 +1,5 @@
 from datasets import load_dataset
-from trl import SFTConfig, SFTTrainer
+from trl import SFTConfig, SFTTrainer, PPOTrainer
 
 dataset = load_dataset("imdb", split="train")
 
