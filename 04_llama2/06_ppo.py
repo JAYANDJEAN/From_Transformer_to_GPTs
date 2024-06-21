@@ -3,8 +3,6 @@ from transformers import GPT2Tokenizer
 from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
 import warnings
 
-
-
 warnings.filterwarnings("ignore")
 model = AutoModelForCausalLMWithValueHead.from_pretrained("gpt2")
 model_ref = AutoModelForCausalLMWithValueHead.from_pretrained("gpt2")
