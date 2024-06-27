@@ -1,8 +1,5 @@
 from datasets import load_dataset
 from trl import SFTConfig, SFTTrainer
-import wandb
-
-wandb.login(key="f2abbefd773fd38b0442492f1bfe727799792595")
 
 dataset = load_dataset("imdb", split="train")
 

@@ -221,10 +221,21 @@ def check_pipeline():
                                  src_padding_mask, tgt_padding_mask,
                                  src_padding_mask)
     print('LOGITS SIZE:', logits_predict.shape)  # torch.Size([64, 24, 10000])
-    token_predict = torch.argmax(logits_predict, dim=2)
-    print('TOKEN SIZE:', token_predict.shape)  # torch.Size([64, 24])
-    print('LOGITS SIZE:', logits_predict.reshape(-1, logits_predict.shape[-1]).shape)  # torch.Size([1536, 10000])
-    print('TGT SIZE:', tgt_out.reshape(-1).shape)  # torch.Size([1536])
+    # token_predict = torch.argmax(logits_predict, dim=2)
+    # print('TOKEN SIZE:', token_predict.shape)  # torch.Size([64, 24])
+    # print('LOGITS SIZE:', logits_predict.reshape(-1, logits_predict.shape[-1]).shape)  # torch.Size([1536, 10000])
+    # print('TGT SIZE:', tgt_out.reshape(-1).shape)  # torch.Size([1536])
+
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.00001)
+
+    loss_mask = torch.randn(BATCH_SIZE, SRC_SEQ_LEN + 1)
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizers[tgt_lang].token_to_id("<pad>"))
+    loss_base = loss_fn(logits_predict.reshape(-1, logits_predict.shape[-1]), tgt_out.reshape(-1))
+    loss_mask = loss_mask.view(-1)
+    loss = torch.sum(loss_base * loss_mask) / loss_mask.sum()
+    loss.backward()
+    optimizer.step()
+    print(loss.item())
 
 
 # 对比后选择tokenizers
@@ -279,6 +290,11 @@ def check_shape():
     print(out.shape)
 
 
+def check_index():
+    data = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    print(data.index(5))
+
+
 if __name__ == '__main__':
     MAX_LEN = 100
     D_MODEL = 512
@@ -289,4 +305,4 @@ if __name__ == '__main__':
     DIM_FF = 256
     DROPOUT = 0.1
 
-    check_pipeline()
+    check_index()

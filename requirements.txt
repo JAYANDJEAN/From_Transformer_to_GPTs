@@ -16,3 +16,6 @@ torchdata
 portalocker
 torchmetrics
 wandb
+
+trl
+gym
