@@ -8,10 +8,12 @@ model = AutoModelForCausalLMWithValueHead.from_pretrained("gpt2")
 model_ref = AutoModelForCausalLMWithValueHead.from_pretrained("gpt2")
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 tokenizer.pad_token = tokenizer.eos_token
-
-ppo_config = {"mini_batch_size": 1, "batch_size": 1}
-config = PPOConfig(**ppo_config)
-ppo_trainer = PPOTrainer(config, model, model_ref, tokenizer)
+ppo_trainer = PPOTrainer(
+    PPOConfig(mini_batch_size=1, batch_size=1),
+    model,
+    model_ref,
+    tokenizer
+)
 
 query_txt = "This morning I went to the "
 query_tensor = tokenizer.encode(query_txt, return_tensors="pt").to(model.pretrained_model.device)
