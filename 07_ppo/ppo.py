@@ -160,7 +160,7 @@ class PPO:
         if self.has_continuous_action_space:
             self.action_std = self.action_std - action_std_decay_rate
             self.action_std = round(self.action_std, 4)
-            if (self.action_std <= min_action_std):
+            if self.action_std <= min_action_std:
                 self.action_std = min_action_std
                 print("setting actor output action_std to min_action_std : ", self.action_std)
             else:
@@ -172,17 +172,14 @@ class PPO:
         print("--------------------------------------------------------------------------------------------")
 
     def select_action(self, state):
-
         if self.has_continuous_action_space:
             with torch.no_grad():
                 state = torch.FloatTensor(state).to(device)
                 action, action_logprob, state_val = self.policy_old.act(state)
-
             self.buffer.states.append(state)
             self.buffer.actions.append(action)
             self.buffer.logprobs.append(action_logprob)
             self.buffer.state_values.append(state_val)
-
             return action.detach().cpu().numpy().flatten()
         else:
             with torch.no_grad():
