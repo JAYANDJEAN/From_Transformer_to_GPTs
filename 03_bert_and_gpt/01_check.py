@@ -56,7 +56,7 @@ def check_mlm_forward():
     print(src[0, :])
     print(src_mask[0, :])
     print('=================forward=======================')
-    output = model(input_ids=src, attention_mask=src_mask)
+    output = model(input_ids=src, attention_mask=src_mask, output_hidden_states=True)
     memory = output.last_hidden_state
     pooler_output = output.pooler_output
     print(memory.shape)  # torch.Size([64, 56, 768])
@@ -65,7 +65,9 @@ def check_mlm_forward():
     # 这里 pooler 和 last_hidden_state 的第一个为什么不相同呢？是因为 pooler 还经过一个 nn.Linear。
     # this returns the classification token after processing through a linear layer and a tanh activation function.
     print(memory[0, index, :10])
+    print(output.hidden_states[-1][0, index, :10])
     print(pooler_output[0, :10])
+
 
 
 def check_gpt_model():
@@ -110,4 +112,4 @@ def check_opus_books():
 
 
 if __name__ == '__main__':
-    check_tokenizer()
+    check_mlm_forward()
