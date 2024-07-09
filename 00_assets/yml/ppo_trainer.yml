@@ -1,12 +1,12 @@
 env_name: "BipedalWalker-v3"
 has_continuous_action_space: True  # continuous action space; else discrete
 max_ep_len: 1000  # max timesteps in one episode
-max_training_timesteps: 3e6  # break training loop if timesteps > max_training_timesteps
-save_model_freq: 1e5  # save model frequency (in num timesteps)
+max_training_timesteps: 3000000  # break training loop if timesteps > max_training_timesteps
+save_model_freq: 100000  # save model frequency (in num timesteps)
 action_std: 0.6  # starting std for action distribution (Multivariate Normal)
 action_std_decay_rate: 0.05  # linearly decay action_std (action_std = action_std - action_std_decay_rate)
 min_action_std: 0.1  # minimum action_std (stop decay after action_std <= min_action_std)
-action_std_decay_freq: 2.5e5  # action_std decay frequency (in num timesteps)
+action_std_decay_freq: 250000  # action_std decay frequency (in num timesteps)
 # PPO hyperparameters
 K_epochs: 80  # update policy for K epochs in one PPO update
 eps_clip: 0.2  # clip parameter for PPO
