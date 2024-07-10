@@ -113,12 +113,12 @@ def train():
 
 def visual():
     print("=" * 90)
-    env = gym.make(config['env_name'])
-    env.metadata["render_modes"] = 'rgb_array'
+    env = gym.make(config['env_name'], render_mode='rgb_array')
     total_test_episodes = 1
     total_timesteps = 300
     step = 10
     frame_duration = 150
+    test_running_reward = 0
 
     image_dir = config['image_dir'] + '/' + config['env_name'] + '/'
     gif_dir = config['gif_dir'] + '/' + config['env_name'] + '/'
@@ -144,31 +144,23 @@ def visual():
     ppo_agent.load(checkpoint_path)
 
     print("-" * 80)
-    test_running_reward = 0
 
     for ep in range(1, total_test_episodes + 1):
         ep_reward = 0
         state = env.reset()
         state = state[0]
-
         for t in range(1, config['max_ep_len'] + 1):
             action = ppo_agent.select_action(state)
             state, reward, done, truncated, info = env.step(action)
             ep_reward += reward
-
             img = env.render()
             img = Image.fromarray(img)
             img.save(image_dir + str(t).zfill(6) + '.jpg')
-
             if done:
                 break
-
         ppo_agent.buffer.clear()
-
         test_running_reward += ep_reward
         print('Episode: {} \t\t Reward: {}'.format(ep, round(ep_reward, 2)))
-        ep_reward = 0
-
     env.close()
 
     print("=" * 90)
@@ -183,10 +175,10 @@ def visual():
     print("total frames in gif : ", len(img_paths))
     print("total duration of gif : " + str(round(len(img_paths) * frame_duration / 1000, 2)) + " seconds")
     img, *imgs = [Image.open(f) for f in img_paths]
-    img.save(fp=gif_path, format='GIF', append_images=imgs, save_all=True, optimize=True, duration=frame_duration,
-             loop=0)
+    img.save(fp=gif_path, format='GIF', append_images=imgs, save_all=True,
+             optimize=True, duration=frame_duration, loop=0)
     print("saved gif at : ", gif_path)
 
 
 if __name__ == '__main__':
-    train()
+    visual()
