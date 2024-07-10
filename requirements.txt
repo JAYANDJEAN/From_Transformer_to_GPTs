@@ -1,6 +1,10 @@
 torch
 torchtext
+torchdata
+torchmetrics
 transformers
+trl
+
 tokenizers
 sentencepiece
 fairscale
@@ -12,10 +16,8 @@ evaluate
 tqdm
 numpy
 spacy
-torchdata
 portalocker
-torchmetrics
 wandb
 
-trl
 gymnasium
+pillow
