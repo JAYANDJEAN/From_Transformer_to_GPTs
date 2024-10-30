@@ -1,0 +1,1000 @@
+[\u0000] 0
+[\u0001] 1
+[\u0002] 2
+[\u0003] 3
+[\u0004] 4
+[\u0005] 5
+[\u0006] 6
+[\u0007] 7
+[\u0008] 8
+[\u0009] 9
+[\u000a] 10
+[\u000b] 11
+[\u000c] 12
+[\u000d] 13
+[\u000e] 14
+[\u000f] 15
+[\u0010] 16
+[\u0011] 17
+[\u0012] 18
+[\u0013] 19
+[\u0014] 20
+[\u0015] 21
+[\u0016] 22
+[\u0017] 23
+[\u0018] 24
+[\u0019] 25
+[\u001a] 26
+[\u001b] 27
+[\u001c] 28
+[\u001d] 29
+[\u001e] 30
+[\u001f] 31
+[ ] 32
+[!] 33
+["] 34
+[#] 35
+[$] 36
+[%] 37
+[&] 38
+['] 39
+[(] 40
+[)] 41
+[*] 42
+[+] 43
+[,] 44
+[-] 45
+[.] 46
+[/] 47
+[0] 48
+[1] 49
+[2] 50
+[3] 51
+[4] 52
+[5] 53
+[6] 54
+[7] 55
+[8] 56
+[9] 57
+[:] 58
+[;] 59
+[<] 60
+[=] 61
+[>] 62
+[?] 63
+[@] 64
+[A] 65
+[B] 66
+[C] 67
+[D] 68
+[E] 69
+[F] 70
+[G] 71
+[H] 72
+[I] 73
+[J] 74
+[K] 75
+[L] 76
+[M] 77
+[N] 78
+[O] 79
+[P] 80
+[Q] 81
+[R] 82
+[S] 83
+[T] 84
+[U] 85
+[V] 86
+[W] 87
+[X] 88
+[Y] 89
+[Z] 90
+[[] 91
+[\] 92
+[]] 93
+[^] 94
+[_] 95
+[`] 96
+[a] 97
+[b] 98
+[c] 99
+[d] 100
+[e] 101
+[f] 102
+[g] 103
+[h] 104
+[i] 105
+[j] 106
+[k] 107
+[l] 108
+[m] 109
+[n] 110
+[o] 111
+[p] 112
+[q] 113
+[r] 114
+[s] 115
+[t] 116
+[u] 117
+[v] 118
+[w] 119
+[x] 120
+[y] 121
+[z] 122
+[{] 123
+[|] 124
+[}] 125
+[~] 126
+[\u007f] 127
+[�] 128
+[�] 129
+[�] 130
+[�] 131
+[�] 132
+[�] 133
+[�] 134
+[�] 135
+[�] 136
+[�] 137
+[�] 138
+[�] 139
+[�] 140
+[�] 141
+[�] 142
+[�] 143
+[�] 144
+[�] 145
+[�] 146
+[�] 147
+[�] 148
+[�] 149
+[�] 150
+[�] 151
+[�] 152
+[�] 153
+[�] 154
+[�] 155
+[�] 156
+[�] 157
+[�] 158
+[�] 159
+[�] 160
+[�] 161
+[�] 162
+[�] 163
+[�] 164
+[�] 165
+[�] 166
+[�] 167
+[�] 168
+[�] 169
+[�] 170
+[�] 171
+[�] 172
+[�] 173
+[�] 174
+[�] 175
+[�] 176
+[�] 177
+[�] 178
+[�] 179
+[�] 180
+[�] 181
+[�] 182
+[�] 183
+[�] 184
+[�] 185
+[�] 186
+[�] 187
+[�] 188
+[�] 189
+[�] 190
+[�] 191
+[�] 192
+[�] 193
+[�] 194
+[�] 195
+[�] 196
+[�] 197
+[�] 198
+[�] 199
+[�] 200
+[�] 201
+[�] 202
+[�] 203
+[�] 204
+[�] 205
+[�] 206
+[�] 207
+[�] 208
+[�] 209
+[�] 210
+[�] 211
+[�] 212
+[�] 213
+[�] 214
+[�] 215
+[�] 216
+[�] 217
+[�] 218
+[�] 219
+[�] 220
+[�] 221
+[�] 222
+[�] 223
+[�] 224
+[�] 225
+[�] 226
+[�] 227
+[�] 228
+[�] 229
+[�] 230
+[�] 231
+[�] 232
+[�] 233
+[�] 234
+[�] 235
+[�] 236
+[�] 237
+[�] 238
+[�] 239
+[�] 240
+[�] 241
+[�] 242
+[�] 243
+[�] 244
+[�] 245
+[�] 246
+[�] 247
+[�] 248
+[�] 249
+[�] 250
+[�] 251
+[�] 252
+[�] 253
+[�] 254
+[�] 255
+[ ][a] -> [ a] 256
+[i][n] -> [in] 257
+[e][ ] -> [e ] 258
+[ a][ ] -> [ a ] 259
+[in][g] -> [ing] 260
+[.][\u000a] -> [.\u000a] 261
+[s][ ] -> [s ] 262
+[n][ ] -> [n ] 263
+[t][h] -> [th] 264
+[ing][ ] -> [ing ] 265
+[e][r] -> [er] 266
+[.\u000a][A] -> [.\u000aA] 267
+[d][ ] -> [d ] 268
+[.\u000aA][ ] -> [.\u000aA ] 269
+[m][a] -> [ma] 270
+[t][ ] -> [t ] 271
+[r][e] -> [re] 272
+[h][i] -> [hi] 273
+[r][o] -> [ro] 274
+[a][r] -> [ar] 275
+[ma][n ] -> [man ] 276
+[w][o] -> [wo] 277
+[s][t] -> [st] 278
+[o][n] -> [on] 279
+[th][e ] -> [the ] 280
+[l][a] -> [la] 281
+[ a][n] -> [ an] 282
+[in][ ] -> [in ] 283
+[y][ ] -> [y ] 284
+[a][l] -> [al] 285
+[a][n] -> [an] 286
+[o][f] -> [of] 287
+[i][s ] -> [is ] 288
+[u][n] -> [un] 289
+[er][ ] -> [er ] 290
+[t][o] -> [to] 291
+[l][e ] -> [le ] 292
+[w][i] -> [wi] 293
+[c][k] -> [ck] 294
+[i][t] -> [it] 295
+[in][ a ] -> [in a ] 296
+[wi][th] -> [with] 297
+[l][e] -> [le] 298
+[ an][d ] -> [ and ] 299
+[o][r] -> [or] 300
+[i][r] -> [ir] 301
+[a][t] -> [at] 302
+[ing][ a ] -> [ing a ] 303
+[o][n ] -> [on ] 304
+[.\u000a][T] -> [.\u000aT] 305
+[m][e] -> [me] 306
+[l][ ] -> [l ] 307
+[l][o] -> [lo] 308
+[d][o] -> [do] 309
+[c][h] -> [ch] 310
+[b][o] -> [bo] 311
+[g][ ] -> [g ] 312
+[of][ ] -> [of ] 313
+[l][d] -> [ld] 314
+[p][e] -> [pe] 315
+[i][d] -> [id] 316
+[w][hi] -> [whi] 317
+[.\u000aA ][man ] -> [.\u000aA man ] 318
+[ a][r] -> [ ar] 319
+[s][e] -> [se] 320
+[h][o] -> [ho] 321
+[r][a] -> [ra] 322
+[on][ a ] -> [on a ] 323
+[wo][ ] -> [wo ] 324
+[e][ar] -> [ear] 325
+[p][la] -> [pla] 326
+[o][p] -> [op] 327
+[o][u] -> [ou] 328
+[ ar][e ] -> [ are ] 329
+[with][ ] -> [with ] 330
+[wo][man ] -> [woman ] 331
+[e][n] -> [en] 332
+[i][c] -> [ic] 333
+[al][k] -> [alk] 334
+[an][d] -> [and] 335
+[p][ ] -> [p ] 336
+[,][ ] -> [, ] 337
+[o][un] -> [oun] 338
+[.\u000aT][wo ] -> [.\u000aTwo ] 339
+[ck][ ] -> [ck ] 340
+[s][hi] -> [shi] 341
+[to][ ] -> [to ] 342
+[pla][y] -> [play] 343
+[re][e] -> [ree] 344
+[w][ear] -> [wear] 345
+[it][t] -> [itt] 346
+[shi][r] -> [shir] 347
+[w][alk] -> [walk] 348
+[b][a] -> [ba] 349
+[pe][op] -> [peop] 350
+[ro][u] -> [rou] 351
+[b][l] -> [bl] 352
+[in ][the ] -> [in the ] 353
+[e][d ] -> [ed ] 354
+[h][a] -> [ha] 355
+[e][s] -> [es] 356
+[c][o] -> [co] 357
+[e][l] -> [el] 358
+[with][ a ] -> [with a ] 359
+[r][i] -> [ri] 360
+[t][e ] -> [te ] 361
+[g][h] -> [gh] 362
+[st][and] -> [stand] 363
+[oun][g ] -> [oung ] 364
+[ing][ a] -> [ing a] 365
+[t][a] -> [ta] 366
+[e][a] -> [ea] 367
+[u][r] -> [ur] 368
+[b][la] -> [bla] 369
+[of][ a ] -> [of a ] 370
+[o][k] -> [ok] 371
+[g][ir] -> [gir] 372
+[f][ro] -> [fro] 373
+[hi][s ] -> [his ] 374
+[.\u000aT][h] -> [.\u000aTh] 375
+[y][oung ] -> [young ] 376
+[s][id] -> [sid] 377
+[f][or] -> [for] 378
+[whi][te ] -> [white ] 379
+[re][d ] -> [red ] 380
+[g][e ] -> [ge ] 381
+[w][at] -> [wat] 382
+[bl][u] -> [blu] 383
+[.\u000aA ][woman ] -> [.\u000aA woman ] 384
+[u][m] -> [um] 385
+[ro][w] -> [row] 386
+[th][e] -> [the] 387
+[d][ a ] -> [d a ] 388
+[b][al] -> [bal] 389
+[s][h] -> [sh] 390
+[me][n ] -> [men ] 391
+[on ][the ] -> [on the ] 392
+[s][itt] -> [sitt] 393
+[p][a] -> [pa] 394
+[l][i] -> [li] 395
+[er][s] -> [ers] 396
+[do][w] -> [dow] 397
+[e][s ] -> [es ] 398
+[blu][e ] -> [blue ] 399
+[bla][ck ] -> [black ] 400
+[lo][ok] -> [look] 401
+[peop][le ] -> [people ] 402
+[s][o] -> [so] 403
+[c][hi] -> [chi] 404
+[shir][t ] -> [shirt ] 405
+[ro][un] -> [roun] 406
+[ho][ld] -> [hold] 407
+[ma][n] -> [man] 408
+[p][o] -> [po] 409
+[ou][t] -> [out] 410
+[n][t ] -> [nt ] 411
+[bo][y ] -> [boy ] 412
+[v][er] -> [ver] 413
+[rou][p ] -> [roup ] 414
+[b][u] -> [bu] 415
+[gir][l ] -> [girl ] 416
+[o][th] -> [oth] 417
+[st][ree] -> [stree] 418
+[e][t] -> [et] 419
+[s][ a ] -> [s a ] 420
+[m][ ] -> [m ] 421
+[g][roup ] -> [group ] 422
+[whi][le ] -> [while ] 423
+[ir][ ] -> [ir ] 424
+[s][i] -> [si] 425
+[t][ a ] -> [t a ] 426
+[f][i] -> [fi] 427
+[w][ ] -> [w ] 428
+[do][g ] -> [dog ] 429
+[s][se] -> [sse] 430
+[group ][of ] -> [group of ] 431
+[sitt][ing ] -> [sitting ] 432
+[ an][d a ] -> [ and a ] 433
+[stand][ing ] -> [standing ] 434
+[on][e ] -> [one ] 435
+[k][ ] -> [k ] 436
+[c][a] -> [ca] 437
+[wear][ing a ] -> [wearing a ] 438
+[t][i] -> [ti] 439
+[b][e] -> [be] 440
+[a][n ] -> [an ] 441
+[s][k] -> [sk] 442
+[g][ra] -> [gra] 443
+[c][ar] -> [car] 444
+[fro][nt ] -> [front ] 445
+[ a][n ] -> [ an ] 446
+[w][a] -> [wa] 447
+[l][d ] -> [ld ] 448
+[me][n] -> [men] 449
+[in ][front ] -> [in front ] 450
+[play][ing ] -> [playing ] 451
+[r][id] -> [rid] 452
+[t][s ] -> [ts ] 453
+[n][e] -> [ne] 454
+[l][l ] -> [ll ] 455
+[s][.\u000aA ] -> [s.\u000aA ] 456
+[re][e ] -> [ree ] 457
+[wear][ing ] -> [wearing ] 458
+[d][i] -> [di] 459
+[sid][e] -> [side] 460
+[d][re] -> [dre] 461
+[er][s ] -> [ers ] 462
+[al][ ] -> [al ] 463
+[i][l] -> [il] 464
+[h][er ] -> [her ] 465
+[s][ a] -> [s a] 466
+[ch][ ] -> [ch ] 467
+[to][ a ] -> [to a ] 468
+[re][a] -> [rea] 469
+[walk][ing ] -> [walking ] 470
+[f][o] -> [fo] 471
+[g][e] -> [ge] 472
+[p][ar] -> [par] 473
+[c][e] -> [ce] 474
+[oth][er ] -> [other ] 475
+[r][u] -> [ru] 476
+[.\u000aA ][young ] -> [.\u000aA young ] 477
+[wo][r] -> [wor] 478
+[g][a] -> [ga] 479
+[shir][t] -> [shirt] 480
+[r][un] -> [run] 481
+[n][o] -> [no] 482
+[s][s ] -> [ss ] 483
+[bal][l ] -> [ball ] 484
+[s][ho] -> [sho] 485
+[.\u000aA ][group of ] -> [.\u000aA group of ] 486
+[t][e] -> [te] 487
+[l][l] -> [ll] 488
+[m][e ] -> [me ] 489
+[.\u000aTh][e ] -> [.\u000aThe ] 490
+[s][s] -> [ss] 491
+[j][um] -> [jum] 492
+[.\u000aA man ][in a ] -> [.\u000aA man in a ] 493
+[b][i] -> [bi] 494
+[peop][le] -> [people] 495
+[l][ar] -> [lar] 496
+[\u000a][A] -> [\u000aA] 497
+[itt][le ] -> [ittle ] 498
+[ar][d] -> [ard] 499
+[g][u] -> [gu] 500
+[roun][d] -> [round] 501
+[st][a] -> [sta] 502
+[s][ are ] -> [s are ] 503
+[ree][n ] -> [reen ] 504
+[in front ][of a ] -> [in front of a ] 505
+[stree][t] -> [street] 506
+[\u000aA][ ] -> [\u000aA ] 507
+[p][ing ] -> [ping ] 508
+[l][ittle ] -> [little ] 509
+[t ][is ] -> [t is ] 510
+[wor][k] -> [work] 511
+[rou][gh] -> [rough] 512
+[g][reen ] -> [green ] 513
+[lo][w ] -> [low ] 514
+[t][ing ] -> [ting ] 515
+[ba][ck] -> [back] 516
+[th][rough] -> [through] 517
+[b][y ] -> [by ] 518
+[an][d ] -> [and ] 519
+[c][e ] -> [ce ] 520
+[b][row] -> [brow] 521
+[.\u000aTh][ree ] -> [.\u000aThree ] 522
+[t][ra] -> [tra] 523
+[c][on] -> [con] 524
+[y][el] -> [yel] 525
+[s][no] -> [sno] 526
+[chi][ld] -> [child] 527
+[lar][ge ] -> [large ] 528
+[s][u] -> [su] 529
+[f][a] -> [fa] 530
+[sid][e ] -> [side ] 531
+[t ][the ] -> [t the ] 532
+[p][u] -> [pu] 533
+[wat][er] -> [water] 534
+[p][h] -> [ph] 535
+[chi][ld ] -> [child ] 536
+[y][ing ] -> [ying ] 537
+[dow][n] -> [down] 538
+[t][wo ] -> [two ] 539
+[s][ and ] -> [s and ] 540
+[d][e] -> [de] 541
+[.\u000aA][n ] -> [.\u000aAn ] 542
+[v][e] -> [ve] 543
+[y][c] -> [yc] 544
+[ers][on ] -> [erson ] 545
+[.\u000a][M] -> [.\u000aM] 546
+[hold][ing a ] -> [holding a ] 547
+[k][e] -> [ke] 548
+[u][s] -> [us] 549
+[dre][sse] -> [dresse] 550
+[it][s ] -> [its ] 551
+[.\u000a][P] -> [.\u000aP] 552
+[yel][low ] -> [yellow ] 553
+[l][on] -> [lon] 554
+[.\u000aA man ][is ] -> [.\u000aA man is ] 555
+[b][y] -> [by] 556
+[.\u000a][S] -> [.\u000aS] 557
+[m][er] -> [mer] 558
+[the][ir ] -> [their ] 559
+[m][o] -> [mo] 560
+[fo][o] -> [foo] 561
+[d][y ] -> [dy ] 562
+[dow][n ] -> [down ] 563
+[j][a] -> [ja] 564
+[bu][i] -> [bui] 565
+[bui][ld] -> [build] 566
+[child][re] -> [childre] 567
+[b][ea] -> [bea] 568
+[p][erson ] -> [person ] 569
+[x][t ] -> [xt ] 570
+[s][ma] -> [sma] 571
+[p][er] -> [per] 572
+[ne][xt ] -> [next ] 573
+[do][g] -> [dog] 574
+[brow][n ] -> [brown ] 575
+[f][e] -> [fe] 576
+[run][n] -> [runn] 577
+[n][ear] -> [near] 578
+[s][m] -> [sm] 579
+[c][row] -> [crow] 580
+[ a][t a ] -> [ at a ] 581
+[g][round] -> [ground] 582
+[ta][b] -> [tab] 583
+[g][la] -> [gla] 584
+[ja][ck] -> [jack] 585
+[v][e ] -> [ve ] 586
+[c][lo] -> [clo] 587
+[wo][men ] -> [women ] 588
+[g][o] -> [go] 589
+[stree][t ] -> [street ] 590
+[u][p ] -> [up ] 591
+[sma][ll ] -> [small ] 592
+[w][e] -> [we] 593
+[ou][r] -> [our] 594
+[wat][ch] -> [watch] 595
+[people][ are ] -> [people are ] 596
+[l][y ] -> [ly ] 597
+[k][e ] -> [ke ] 598
+[sno][w] -> [snow] 599
+[or][ ] -> [or ] 600
+[u][p] -> [up] 601
+[gir][l] -> [girl] 602
+[for][m] -> [form] 603
+[ ][the ] -> [ the ] 604
+[bal][l] -> [ball] 605
+[dresse][d ] -> [dressed ] 606
+[p][in] -> [pin] 607
+[e][op] -> [eop] 608
+[a][t ] -> [at ] 609
+[h][ea] -> [hea] 610
+[of][f] -> [off] 611
+[p][i] -> [pi] 612
+[h][and] -> [hand] 613
+[down][ a ] -> [down a ] 614
+[h][in] -> [hin] 615
+[c][ro] -> [cro] 616
+[.\u000aP][eop] -> [.\u000aPeop] 617
+[bo][y] -> [boy] 618
+[ic][ ] -> [ic ] 619
+[e][ld] -> [eld] 620
+[es][ a ] -> [es a ] 621
+[to][r] -> [tor] 622
+[shirt ][is ] -> [shirt is ] 623
+[side][walk] -> [sidewalk] 624
+[or][an] -> [oran] 625
+[f][u] -> [fu] 626
+[gla][sse] -> [glasse] 627
+[p][le ] -> [ple ] 628
+[so][me ] -> [some ] 629
+[ing ][on a ] -> [ing on a ] 630
+[p][s ] -> [ps ] 631
+[ar][d ] -> [ard ] 632
+[bo][ard] -> [board] 633
+[p][ic] -> [pic] 634
+[t][alk] -> [talk] 635
+[en][t] -> [ent] 636
+[ an][other ] -> [ another ] 637
+[lo][w] -> [low] 638
+[so][me] -> [some] 639
+[men][ are ] -> [men are ] 640
+[roun][d ] -> [round ] 641
+[o][l] -> [ol] 642
+[ch][a] -> [cha] 643
+[.\u000a][F] -> [.\u000aF] 644
+[ing a][t a ] -> [ing at a ] 645
+[wo][man] -> [woman] 646
+[gh][t] -> [ght] 647
+[k][ing ] -> [king ] 648
+[th][er] -> [ther] 649
+[al][l] -> [all] 650
+[ a][s ] -> [ as ] 651
+[whi][le] -> [while] 652
+[be][hin] -> [behin] 653
+[ou][t ] -> [out ] 654
+[st][ru] -> [stru] 655
+[on][e] -> [one] 656
+[c][it] -> [cit] 657
+[s][e ] -> [se ] 658
+[it][ar] -> [itar] 659
+[c][u] -> [cu] 660
+[j][e] -> [je] 661
+[oran][ge ] -> [orange ] 662
+[out][side ] -> [outside ] 663
+[d][r] -> [dr] 664
+[hold][ing ] -> [holding ] 665
+[in][t] -> [int] 666
+[e][t ] -> [et ] 667
+[shirt][ and ] -> [shirt and ] 668
+[co][m] -> [com] 669
+[gh][t ] -> [ght ] 670
+[v][er ] -> [ver ] 671
+[ic][yc] -> [icyc] 672
+[s][t ] -> [st ] 673
+[look][ing ] -> [looking ] 674
+[le][a] -> [lea] 675
+[the][ a] -> [the a] 676
+[t][u] -> [tu] 677
+[build][ing] -> [building] 678
+[to ][the ] -> [to the ] 679
+[p][an] -> [pan] 680
+[s][un] -> [sun] 681
+[sk][at] -> [skat] 682
+[.\u000aTwo ][men ] -> [.\u000aTwo men ] 683
+[h][at] -> [hat] 684
+[si][an ] -> [sian ] 685
+[o][ver] -> [over] 686
+[jum][ping ] -> [jumping ] 687
+[sh][or] -> [shor] 688
+[c][c] -> [cc] 689
+[.\u000aA ][little ] -> [.\u000aA little ] 690
+[pin][k ] -> [pink ] 691
+[m][b] -> [mb] 692
+[t][ur] -> [tur] 693
+[th][ing ] -> [thing ] 694
+[c][ti] -> [cti] 695
+[t][t] -> [tt] 696
+[ma][le ] -> [male ] 697
+[stand][s ] -> [stands ] 698
+[s][ur] -> [sur] 699
+[.\u000aA woman ][in a ] -> [.\u000aA woman in a ] 700
+[ca][mer] -> [camer] 701
+[camer][a] -> [camera] 702
+[sitting ][on a ] -> [sitting on a ] 703
+[d][an] -> [dan] 704
+[of ][the ] -> [of the ] 705
+[in the ][back] -> [in the back] 706
+[b][en] -> [ben] 707
+[runn][ing ] -> [running ] 708
+[p][ro] -> [pro] 709
+[s][, ] -> [s, ] 710
+[b][icyc] -> [bicyc] 711
+[ld][er ] -> [lder ] 712
+[k][i] -> [ki] 713
+['][s ] -> ['s ] 714
+[c][ou] -> [cou] 715
+[wat][er ] -> [water ] 716
+[s][its ] -> [sits ] 717
+[our][ ] -> [our ] 718
+[ and ][white ] -> [ and white ] 719
+[gu][itar] -> [guitar] 720
+[wo][o] -> [woo] 721
+[ch][e] -> [che] 722
+[by][ a ] -> [by a ] 723
+[.\u000aA ][man] -> [.\u000aA man] 724
+[oun][ta] -> [ounta] 725
+[h][el] -> [hel] 726
+[ing][ and ] -> [ing and ] 727
+[d][d] -> [dd] 728
+[at][i] -> [ati] 729
+[next ][to a ] -> [next to a ] 730
+[ver][al ] -> [veral ] 731
+[.\u000aA ][person ] -> [.\u000aA person ] 732
+[d][u] -> [du] 733
+[s][a] -> [sa] 734
+[out][side] -> [outside] 735
+[ro][o] -> [roo] 736
+[c][li] -> [cli] 737
+[childre][n ] -> [children ] 738
+[t][r] -> [tr] 739
+[d][a] -> [da] 740
+[fro][m ] -> [from ] 741
+[lon][g ] -> [long ] 742
+[f][f] -> [ff] 743
+[m][id] -> [mid] 744
+[.\u000aA ][girl ] -> [.\u000aA girl ] 745
+[down ][the ] -> [down the ] 746
+[.\u000aPeop][le ] -> [.\u000aPeople ] 747
+[man ][in a ] -> [man in a ] 748
+[b][ri] -> [bri] 749
+[man ][is ] -> [man is ] 750
+[ an][ a] -> [ an a] 751
+[play][er ] -> [player ] 752
+[ro][a] -> [roa] 753
+[ma][r] -> [mar] 754
+[q][u] -> [qu] 755
+[per][form] -> [perform] 756
+[pe][d ] -> [ped ] 757
+[.\u000aA ][boy ] -> [.\u000aA boy ] 758
+[le][s ] -> [les ] 759
+[ a][t ] -> [ at ] 760
+[l][in] -> [lin] 761
+[p][re] -> [pre] 762
+[to][p ] -> [top ] 763
+[s][c] -> [sc] 764
+[o][lder ] -> [older ] 765
+[ing ][the ] -> [ing the ] 766
+[bl][on] -> [blon] 767
+[to][ge] -> [toge] 768
+[un][d] -> [und] 769
+[st][and ] -> [stand ] 770
+[.\u000aM][an ] -> [.\u000aMan ] 771
+[t][ree] -> [tree] 772
+[dressed ][in ] -> [dressed in ] 773
+[for][ a ] -> [for a ] 774
+[so][cc] -> [socc] 775
+[in][to a ] -> [into a ] 776
+[crow][d ] -> [crowd ] 777
+[bla][ck] -> [black] 778
+[in the back][ground] -> [in the background] 779
+[h][or] -> [hor] 780
+[i][t ] -> [it ] 781
+[gra][ss] -> [grass] 782
+[sm][il] -> [smil] 783
+[g][g] -> [gg] 784
+[un][i] -> [uni] 785
+[ha][t ] -> [hat ] 786
+[hea][d] -> [head] 787
+[e][d] -> [ed] 788
+[bea][ch] -> [beach] 789
+[fro][m] -> [from] 790
+[e][n ] -> [en ] 791
+[s][pe] -> [spe] 792
+[v][i] -> [vi] 793
+[st][ri] -> [stri] 794
+[fi][eld] -> [field] 795
+[m][p] -> [mp] 796
+[ic][e ] -> [ice ] 797
+[pla][y ] -> [play ] 798
+[par][k] -> [park] 799
+[j][o] -> [jo] 800
+[re][d] -> [red] 801
+[for][ ] -> [for ] 802
+[near][ a ] -> [near a ] 803
+[th][ ] -> [th ] 804
+[through][ a ] -> [through a ] 805
+[s][p] -> [sp] 806
+[th][er ] -> [ther ] 807
+[n][a] -> [na] 808
+[rea][d] -> [read] 809
+[s][le] -> [sle] 810
+[la][dy ] -> [lady ] 811
+[n][i] -> [ni] 812
+[dog ][is ] -> [dog is ] 813
+[ta][k] -> [tak] 814
+[ a][t the ] -> [ at the ] 815
+[st][o] -> [sto] 816
+[.\u000a][W] -> [.\u000aW] 817
+[glasse][s ] -> [glasses ] 818
+[look][ing a] -> [looking a] 819
+[s][wi] -> [swi] 820
+[gra][y ] -> [gray ] 821
+[car][r] -> [carr] 822
+[skat][e] -> [skate] 823
+[-][ha] -> [-ha] 824
+[socc][er ] -> [soccer ] 825
+[v][ing ] -> [ving ] 826
+[tab][le ] -> [table ] 827
+[bi][ke ] -> [bike ] 828
+[cli][mb] -> [climb] 829
+[in][ an ] -> [in an ] 830
+[co][l] -> [col] 831
+[um][b] -> [umb] 832
+[look][s ] -> [looks ] 833
+[to][w] -> [tow] 834
+[o][ver ] -> [over ] 835
+[d][ir] -> [dir] 836
+[ph][one] -> [phone] 837
+[t][ea] -> [tea] 838
+[on ][his ] -> [on his ] 839
+[.\u000aA woman ][is ] -> [.\u000aA woman is ] 840
+[h][er] -> [her] 841
+[p][ur] -> [pur] 842
+[ing ][in a ] -> [ing in a ] 843
+[al][l ] -> [all ] 844
+[.\u000aF][our ] -> [.\u000aFour ] 845
+[c][t] -> [ct] 846
+[ ][is ] -> [ is ] 847
+[while][ a ] -> [while a ] 848
+[s][we] -> [swe] 849
+[behin][d ] -> [behind ] 850
+[.\u000aS][e] -> [.\u000aSe] 851
+[s ][on a ] -> [s on a ] 852
+[dre][ss ] -> [dress ] 853
+[cit][y ] -> [city ] 854
+[from][ a ] -> [from a ] 855
+[e][at] -> [eat] 856
+[.\u000aA group of ][people ] -> [.\u000aA group of people ] 857
+[en][d] -> [end] 858
+[t][ri] -> [tri] 859
+[tu][re] -> [ture] 860
+[w][in] -> [win] 861
+[dan][c] -> [danc] 862
+[girl][s ] -> [girls ] 863
+[tur][e ] -> [ture ] 864
+[m][ounta] -> [mounta] 865
+[it][i] -> [iti] 866
+[.\u000a][C] -> [.\u000aC] 867
+[out][do] -> [outdo] 868
+[er ][is ] -> [er is ] 869
+[st][u] -> [stu] 870
+[tab][le] -> [table] 871
+[po][s] -> [pos] 872
+[f][lo] -> [flo] 873
+[si][g] -> [sig] 874
+[childre][n] -> [children] 875
+[m][u] -> [mu] 876
+[t][er] -> [ter] 877
+[b][ar] -> [bar] 878
+[an][s ] -> [ans ] 879
+[s][ing] -> [sing] 880
+[A][sian ] -> [Asian ] 881
+[walk][s ] -> [walks ] 882
+[fu][l ] -> [ful ] 883
+[wa][y ] -> [way ] 884
+[s][ha] -> [sha] 885
+[rid][ing a ] -> [riding a ] 886
+[m][ic] -> [mic] 887
+[play][ing a ] -> [playing a ] 888
+[ea][ch ] -> [each ] 889
+[d][ar] -> [dar] 890
+[e][x] -> [ex] 891
+[s][ and a ] -> [s and a ] 892
+[swi][m] -> [swim] 893
+[hi][m] -> [him] 894
+[w][all] -> [wall] 895
+[h][e ] -> [he ] 896
+[mic][ro] -> [micro] 897
+[whi][te] -> [white] 898
+[men][t] -> [ment] 899
+[f][la] -> [fla] 900
+[over][ a ] -> [over a ] 901
+[m][ou] -> [mou] 902
+[\u000a][T] -> [\u000aT] 903
+[c][yc] -> [cyc] 904
+[ba][sk] -> [bask] 905
+[o][ld ] -> [old ] 906
+[.\u000aSe][veral ] -> [.\u000aSeveral ] 907
+[.\u000aA man ][wearing a ] -> [.\u000aA man wearing a ] 908
+[crow][d] -> [crowd] 909
+[st][i] -> [sti] 910
+[foo][t] -> [foot] 911
+[lon][g] -> [long] 912
+[ba][se] -> [base] 913
+[.\u000aA man ][with a ] -> [.\u000aA man with a ] 914
+[dog][s ] -> [dogs ] 915
+[,][ and ] -> [, and ] 916
+[cou][ple ] -> [couple ] 917
+[cti][on ] -> [ction ] 918
+[dr][in] -> [drin] 919
+[walk][ ] -> [walk ] 920
+[oth][er] -> [other] 921
+[mid][d] -> [midd] 922
+[jack][et ] -> [jacket ] 923
+[w][ho] -> [who] 924
+[sle][e] -> [slee] 925
+[s][w] -> [sw] 926
+[g][et] -> [get] 927
+[boy][s ] -> [boys ] 928
+[me][nt ] -> [ment ] 929
+[me][t] -> [met] 930
+[t][en] -> [ten] 931
+[p][ho] -> [pho] 932
+[with ][his ] -> [with his ] 933
+[.\u000a][O] -> [.\u000aO] 934
+[.\u000aA ][child ] -> [.\u000aA child ] 935
+[talk][ing ] -> [talking ] 936
+[in ][the a] -> [in the a] 937
+[bu][s] -> [bus] 938
+[sh][ ] -> [sh ] 939
+[le][d ] -> [led ] 940
+[jack][et] -> [jacket] 941
+[ a][t] -> [ at] 942
+[ing a][n ] -> [ing an ] 943
+[co][ver] -> [cover] 944
+[y][ing a ] -> [ying a ] 945
+[some][thing ] -> [something ] 946
+[c][le] -> [cle] 947
+[.\u000a][B] -> [.\u000aB] 948
+[play][s ] -> [plays ] 949
+[st][ a ] -> [st a ] 950
+[m][us] -> [mus] 951
+[ing][.\u000aA ] -> [ing.\u000aA ] 952
+[through][ ] -> [through ] 953
+[in front ][of ] -> [in front of ] 954
+[ck][s ] -> [cks ] 955
+[the][m] -> [them] 956
+[swe][at] -> [sweat] 957
+[und][er] -> [under] 958
+[ha][s ] -> [has ] 959
+[bo][ard ] -> [board ] 960
+[si][t ] -> [sit ] 961
+[c][at] -> [cat] 962
+[.\u000aA young ][boy ] -> [.\u000aA young boy ] 963
+[be][ing ] -> [being ] 964
+[s][it] -> [sit] 965
+[mo][tor] -> [motor] 966
+[bask][et] -> [basket] 967
+[roa][d] -> [road] 968
+[blon][d ] -> [blond ] 969
+[stri][ped ] -> [striped ] 970
+[, ][one ] -> [, one ] 971
+[v][ing a ] -> [ving a ] 972
+[p][p] -> [pp] 973
+[t][-] -> [t-] 974
+[y][s ] -> [ys ] 975
+[ic][an ] -> [ican ] 976
+[bi][k] -> [bik] 977
+[c][or] -> [cor] 978
+[n][e ] -> [ne ] 979
+[ba][by ] -> [baby ] 980
+[du][l] -> [dul] 981
+[s ][to ] -> [s to ] 982
+[v][es ] -> [ves ] 983
+[sidewalk][ ] -> [sidewalk ] 984
+[pic][ture ] -> [picture ] 985
+[ha][ir ] -> [hair ] 986
+[th][at ] -> [that ] 987
+[h][e] -> [he] 988
+[v][es] -> [ves] 989
+[jum][ps ] -> [jumps ] 990
+[blu][e] -> [blue] 991
+[s][.\u000aTwo ] -> [s.\u000aTwo ] 992
+[ers][ are ] -> [ers are ] 993
+[woman ][in a ] -> [woman in a ] 994
+[re][st] -> [rest] 995
+[ a][rea] -> [ area] 996
+[col][or] -> [color] 997
+[foo][d ] -> [food ] 998
+[g][i] -> [gi] 999

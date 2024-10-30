@@ -4,7 +4,7 @@ import torch
 import json
 import yaml
 
-with open('../00_assets/json/prompts.json', 'r') as file:
+with open('../00_assets/yml/prompts.json', 'r') as file:
     data = json.load(file)
 prompts = data['prompts']
 torch.manual_seed(0)

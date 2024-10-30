@@ -1,0 +1,1000 @@
+[\u0000] 0
+[\u0001] 1
+[\u0002] 2
+[\u0003] 3
+[\u0004] 4
+[\u0005] 5
+[\u0006] 6
+[\u0007] 7
+[\u0008] 8
+[\u0009] 9
+[\u000a] 10
+[\u000b] 11
+[\u000c] 12
+[\u000d] 13
+[\u000e] 14
+[\u000f] 15
+[\u0010] 16
+[\u0011] 17
+[\u0012] 18
+[\u0013] 19
+[\u0014] 20
+[\u0015] 21
+[\u0016] 22
+[\u0017] 23
+[\u0018] 24
+[\u0019] 25
+[\u001a] 26
+[\u001b] 27
+[\u001c] 28
+[\u001d] 29
+[\u001e] 30
+[\u001f] 31
+[ ] 32
+[!] 33
+["] 34
+[#] 35
+[$] 36
+[%] 37
+[&] 38
+['] 39
+[(] 40
+[)] 41
+[*] 42
+[+] 43
+[,] 44
+[-] 45
+[.] 46
+[/] 47
+[0] 48
+[1] 49
+[2] 50
+[3] 51
+[4] 52
+[5] 53
+[6] 54
+[7] 55
+[8] 56
+[9] 57
+[:] 58
+[;] 59
+[<] 60
+[=] 61
+[>] 62
+[?] 63
+[@] 64
+[A] 65
+[B] 66
+[C] 67
+[D] 68
+[E] 69
+[F] 70
+[G] 71
+[H] 72
+[I] 73
+[J] 74
+[K] 75
+[L] 76
+[M] 77
+[N] 78
+[O] 79
+[P] 80
+[Q] 81
+[R] 82
+[S] 83
+[T] 84
+[U] 85
+[V] 86
+[W] 87
+[X] 88
+[Y] 89
+[Z] 90
+[[] 91
+[\] 92
+[]] 93
+[^] 94
+[_] 95
+[`] 96
+[a] 97
+[b] 98
+[c] 99
+[d] 100
+[e] 101
+[f] 102
+[g] 103
+[h] 104
+[i] 105
+[j] 106
+[k] 107
+[l] 108
+[m] 109
+[n] 110
+[o] 111
+[p] 112
+[q] 113
+[r] 114
+[s] 115
+[t] 116
+[u] 117
+[v] 118
+[w] 119
+[x] 120
+[y] 121
+[z] 122
+[{] 123
+[|] 124
+[}] 125
+[~] 126
+[\u007f] 127
+[�] 128
+[�] 129
+[�] 130
+[�] 131
+[�] 132
+[�] 133
+[�] 134
+[�] 135
+[�] 136
+[�] 137
+[�] 138
+[�] 139
+[�] 140
+[�] 141
+[�] 142
+[�] 143
+[�] 144
+[�] 145
+[�] 146
+[�] 147
+[�] 148
+[�] 149
+[�] 150
+[�] 151
+[�] 152
+[�] 153
+[�] 154
+[�] 155
+[�] 156
+[�] 157
+[�] 158
+[�] 159
+[�] 160
+[�] 161
+[�] 162
+[�] 163
+[�] 164
+[�] 165
+[�] 166
+[�] 167
+[�] 168
+[�] 169
+[�] 170
+[�] 171
+[�] 172
+[�] 173
+[�] 174
+[�] 175
+[�] 176
+[�] 177
+[�] 178
+[�] 179
+[�] 180
+[�] 181
+[�] 182
+[�] 183
+[�] 184
+[�] 185
+[�] 186
+[�] 187
+[�] 188
+[�] 189
+[�] 190
+[�] 191
+[�] 192
+[�] 193
+[�] 194
+[�] 195
+[�] 196
+[�] 197
+[�] 198
+[�] 199
+[�] 200
+[�] 201
+[�] 202
+[�] 203
+[�] 204
+[�] 205
+[�] 206
+[�] 207
+[�] 208
+[�] 209
+[�] 210
+[�] 211
+[�] 212
+[�] 213
+[�] 214
+[�] 215
+[�] 216
+[�] 217
+[�] 218
+[�] 219
+[�] 220
+[�] 221
+[�] 222
+[�] 223
+[�] 224
+[�] 225
+[�] 226
+[�] 227
+[�] 228
+[�] 229
+[�] 230
+[�] 231
+[�] 232
+[�] 233
+[�] 234
+[�] 235
+[�] 236
+[�] 237
+[�] 238
+[�] 239
+[�] 240
+[�] 241
+[�] 242
+[�] 243
+[�] 244
+[�] 245
+[�] 246
+[�] 247
+[�] 248
+[�] 249
+[�] 250
+[�] 251
+[�] 252
+[�] 253
+[�] 254
+[�] 255
+[n][ ] -> [n ] 256
+[e][i] -> [ei] 257
+[e][r] -> [er] 258
+[e][n ] -> [en ] 259
+[e][ ] -> [e ] 260
+[t][ ] -> [t ] 261
+[ei][n] -> [ein] 262
+[c][h] -> [ch] 263
+[.][\u000a] -> [.\u000a] 264
+[er][ ] -> [er ] 265
+[i][n ] -> [in ] 266
+[m][ ] -> [m ] 267
+[a][u] -> [au] 268
+[n][d] -> [nd] 269
+[.\u000a][E] -> [.\u000aE] 270
+[e][m ] -> [em ] 271
+[e][n] -> [en] 272
+[�][�] -> [ä] 273
+[nd][ ] -> [nd ] 274
+[a][n] -> [an] 275
+[ein][em ] -> [einem ] 276
+[.\u000aE][in ] -> [.\u000aEin ] 277
+[e][l] -> [el] 278
+[s][ch] -> [sch] 279
+[i][n] -> [in] 280
+[u][nd ] -> [und ] 281
+[au][f] -> [auf] 282
+[s][ ] -> [s ] 283
+[m][i] -> [mi] 284
+[s][t] -> [st] 285
+[a][r] -> [ar] 286
+[,][ ] -> [, ] 287
+[mi][t ] -> [mit ] 288
+[auf][ ] -> [auf ] 289
+[�][�] -> [ü] 290
+[u][n] -> [un] 291
+[M][an] -> [Man] 292
+[s][i] -> [si] 293
+[e][h] -> [eh] 294
+[ein][er ] -> [einer ] 295
+[Man][n ] -> [Mann ] 296
+[r][au] -> [rau] 297
+[�][�] -> [ß] 298
+[w][ei] -> [wei] 299
+[in][e ] -> [ine ] 300
+[h][r] -> [hr] 301
+[.\u000aE][ine ] -> [.\u000aEine ] 302
+[un][g] -> [ung] 303
+[v][o] -> [vo] 304
+[r][a] -> [ra] 305
+[a][l] -> [al] 306
+[ei][n ] -> [ein ] 307
+[F][rau] -> [Frau] 308
+[.\u000aEin ][Mann ] -> [.\u000aEin Mann ] 309
+[c][k] -> [ck] 310
+[s][p] -> [sp] 311
+[d][er ] -> [der ] 312
+[ein][e ] -> [eine ] 313
+[g][e] -> [ge] 314
+[t][en ] -> [ten ] 315
+[r][o] -> [ro] 316
+[i][e ] -> [ie ] 317
+[S][t] -> [St] 318
+[t][z] -> [tz] 319
+[in ][einem ] -> [in einem ] 320
+[ch][ ] -> [ch ] 321
+[ein][en ] -> [einen ] 322
+[i][el] -> [iel] 323
+[e][s ] -> [es ] 324
+[M][ä] -> [Mä] 325
+[Frau][ ] -> [Frau ] 326
+[wei][ ] -> [wei ] 327
+[k][l] -> [kl] 328
+[e][t] -> [et] 329
+[d][ie ] -> [die ] 330
+[z][u] -> [zu] 331
+[t][er] -> [ter] 332
+[d][ ] -> [d ] 333
+[b][ei] -> [bei] 334
+[s][s] -> [ss] 335
+[o][n] -> [on] 336
+[S][ch] -> [Sch] 337
+[Z][wei ] -> [Zwei ] 338
+[e][b] -> [eb] 339
+[.\u000a][Zwei ] -> [.\u000aZwei ] 340
+[l][i] -> [li] 341
+[a][nd] -> [and] 342
+[i][m ] -> [im ] 343
+[r][ ] -> [r ] 344
+[sp][iel] -> [spiel] 345
+[t ][auf ] -> [t auf ] 346
+[st][eh] -> [steh] 347
+[ch][en ] -> [chen ] 348
+[r][ei] -> [rei] 349
+[r][i] -> [ri] 350
+[a][n ] -> [an ] 351
+[si][tz] -> [sitz] 352
+[er][s] -> [ers] 353
+[b][l] -> [bl] 354
+[o][r] -> [or] 355
+[al][l] -> [all] 356
+[vo][n ] -> [von ] 357
+[r][u] -> [ru] 358
+[g][t ] -> [gt ] 359
+[d][en ] -> [den ] 360
+[w][ar] -> [war] 361
+[ä][hr] -> [ähr] 362
+[a][m] -> [am] 363
+[g][en ] -> [gen ] 364
+[St][ra] -> [Stra] 365
+[K][i] -> [Ki] 366
+[t][er ] -> [ter ] 367
+[ä][l] -> [äl] 368
+[e][u] -> [eu] 369
+[d][em ] -> [dem ] 370
+[Mä][d] -> [Mäd] 371
+[wei][ß] -> [weiß] 372
+[p][p] -> [pp] 373
+[g][ ] -> [g ] 374
+[J][ung] -> [Jung] 375
+[b][e] -> [be] 376
+[.\u000aEine ][Frau ] -> [.\u000aEine Frau ] 377
+[mit ][einem ] -> [mit einem ] 378
+[si][ch ] -> [sich ] 379
+[n][n] -> [nn] 380
+[a][ch] -> [ach] 381
+[.\u000a][D] -> [.\u000aD] 382
+[u][r] -> [ur] 383
+[a][t] -> [at] 384
+[l][l] -> [ll] 385
+[war][z] -> [warz] 386
+[i][sch] -> [isch] 387
+[Mäd][chen ] -> [Mädchen ] 388
+[e][m] -> [em] 389
+[P][ers] -> [Pers] 390
+[ein][es ] -> [eines ] 391
+[sch][warz] -> [schwarz] 392
+[a][s ] -> [as ] 393
+[Mä][nn] -> [Männ] 394
+[b][er] -> [ber] 395
+[t][e ] -> [te ] 396
+[a][hr] -> [ahr] 397
+[bl][au] -> [blau] 398
+[ä][u] -> [äu] 399
+[Stra][ß] -> [Straß] 400
+[vo][r ] -> [vor ] 401
+[i][r] -> [ir] 402
+[g][eh] -> [geh] 403
+[l][a] -> [la] 404
+[en][, ] -> [en, ] 405
+[en][sch] -> [ensch] 406
+[t][e] -> [te] 407
+[pp][e ] -> [ppe ] 408
+[g][el] -> [gel] 409
+[n][en ] -> [nen ] 410
+[ei][d] -> [eid] 411
+[auf ][einem ] -> [auf einem ] 412
+[�][�] -> [ö] 413
+[ung][ ] -> [ung ] 414
+[Männ][er ] -> [Männer ] 415
+[en][.\u000aEin ] -> [en.\u000aEin ] 416
+[e][nd ] -> [end ] 417
+[o][t] -> [ot] 418
+[Jung][e ] -> [Junge ] 419
+[r][ü] -> [rü] 420
+[M][ensch] -> [Mensch] 421
+[zu][ ] -> [zu ] 422
+[a][ss] -> [ass] 423
+[H][und ] -> [Hund ] 424
+[in ][einer ] -> [in einer ] 425
+[h][äl] -> [häl] 426
+[ähr][end ] -> [ährend ] 427
+[S][p] -> [Sp] 428
+[ru][ppe ] -> [ruppe ] 429
+[w][ährend ] -> [während ] 430
+[i][er] -> [ier] 431
+[in ][der ] -> [in der ] 432
+[en][t] -> [ent] 433
+[B][a] -> [Ba] 434
+[and][er] -> [ander] 435
+[p][f] -> [pf] 436
+[i][e] -> [ie] 437
+[r][e] -> [re] 438
+[r][ä] -> [rä] 439
+[r][in] -> [rin] 440
+[G][ruppe ] -> [Gruppe ] 441
+[er ][Mann ] -> [er Mann ] 442
+[an ][einem ] -> [an einem ] 443
+[i][hr] -> [ihr] 444
+[t][, ] -> [t, ] 445
+[m][m] -> [mm] 446
+[i][g] -> [ig] 447
+[H][em] -> [Hem] 448
+[b][er ] -> [ber ] 449
+[d][e] -> [de] 450
+[t ][ein ] -> [t ein ] 451
+[j][ung] -> [jung] 452
+[ ][und ] -> [ und ] 453
+[Pers][on] -> [Person] 454
+[el][l] -> [ell] 455
+[steh][t ] -> [steht ] 456
+[l][an] -> [lan] 457
+[f][t ] -> [ft ] 458
+[bei][ ] -> [bei ] 459
+[t][.\u000aEin ] -> [t.\u000aEin ] 460
+[i][s] -> [is] 461
+[ü][ber ] -> [über ] 462
+[l][ä] -> [lä] 463
+[K][l] -> [Kl] 464
+[Ki][nd] -> [Kind] 465
+[auf ][einer ] -> [auf einer ] 466
+[d][as ] -> [das ] 467
+[sch][au] -> [schau] 468
+[t ][einen ] -> [t einen ] 469
+[o][n ] -> [on ] 470
+[n][e] -> [ne] 471
+[v][er] -> [ver] 472
+[o][l] -> [ol] 473
+[b][en] -> [ben] 474
+[rei][ ] -> [rei ] 475
+[blau][en ] -> [blauen ] 476
+[H][u] -> [Hu] 477
+[Hem][d ] -> [Hemd ] 478
+[h][in] -> [hin] 479
+[b][all] -> [ball] 480
+[a][m ] -> [am ] 481
+[eb][en ] -> [eben ] 482
+[f][ü] -> [fü] 483
+[a][ar] -> [aar] 484
+[.\u000aEine ][Gruppe ] -> [.\u000aEine Gruppe ] 485
+[e][g] -> [eg] 486
+[ei][l] -> [eil] 487
+[W][ass] -> [Wass] 488
+[a][ck] -> [ack] 489
+[a][d] -> [ad] 490
+[ro][ß] -> [roß] 491
+[en ][und ] -> [en und ] 492
+[i][t] -> [it] 493
+[weiß][en ] -> [weißen ] 494
+[e ][und ] -> [e und ] 495
+[Person][en ] -> [Personen ] 496
+[a][nd ] -> [and ] 497
+[g][roß] -> [groß] 498
+[d][ur] -> [dur] 499
+[i][l] -> [il] 500
+[ro][ten ] -> [roten ] 501
+[b][rau] -> [brau] 502
+[t auf ][einem ] -> [t auf einem ] 503
+[t ][eine ] -> [t eine ] 504
+[nd][e ] -> [nde ] 505
+[u][m ] -> [um ] 506
+[n][eben ] -> [neben ] 507
+[t ][sich ] -> [t sich ] 508
+[f][ar] -> [far] 509
+[sitz][t ] -> [sitzt ] 510
+[, ][die ] -> [, die ] 511
+[sp][rin] -> [sprin] 512
+[kl][eid] -> [kleid] 513
+[spiel][t ] -> [spielt ] 514
+[er][n ] -> [ern ] 515
+[, ][der ] -> [, der ] 516
+[g][rü] -> [grü] 517
+[un][ter] -> [unter] 518
+[b][en ] -> [ben ] 519
+[h][o] -> [ho] 520
+[u][m] -> [um] 521
+[Mensch][en ] -> [Menschen ] 522
+[, ][während ] -> [, während ] 523
+[t][rä] -> [trä] 524
+[eh][r] -> [ehr] 525
+[Straß][e ] -> [Straße ] 526
+[en][.\u000aEin Mann ] -> [en.\u000aEin Mann ] 527
+[f][ahr] -> [fahr] 528
+[f][ähr] -> [fähr] 529
+[.\u000aD][rei ] -> [.\u000aDrei ] 530
+[Ki][nd ] -> [Kind ] 531
+[mit ][einer ] -> [mit einer ] 532
+[F][ahr] -> [Fahr] 533
+[dur][ch ] -> [durch ] 534
+[g][er] -> [ger] 535
+[G][e] -> [Ge] 536
+[vo][r] -> [vor] 537
+[far][ben] -> [farben] 538
+[au][s] -> [aus] 539
+[t ][und ] -> [t und ] 540
+[m][ach] -> [mach] 541
+[en][n] -> [enn] 542
+[A][u] -> [Au] 543
+[steh][en ] -> [stehen ] 544
+[i][mm] -> [imm] 545
+[auf ][dem ] -> [auf dem ] 546
+[Frau][en ] -> [Frauen ] 547
+[h][n] -> [hn] 548
+[vor ][einem ] -> [vor einem ] 549
+[f][f] -> [ff] 550
+[spiel][en ] -> [spielen ] 551
+[B][o] -> [Bo] 552
+[au][s ] -> [aus ] 553
+[i][k] -> [ik] 554
+[ar][k] -> [ark] 555
+[t][eil] -> [teil] 556
+[.\u000aEin ][kl] -> [.\u000aEin kl] 557
+[e][st] -> [est] 558
+[lan][g] -> [lang] 559
+[Sp][iel] -> [Spiel] 560
+[f][t] -> [ft] 561
+[L][eu] -> [Leu] 562
+[H][o] -> [Ho] 563
+[O][ber] -> [Ober] 564
+[sitz][en ] -> [sitzen ] 565
+[S][h] -> [Sh] 566
+[g][en] -> [gen] 567
+[K][o] -> [Ko] 568
+[Kind][er ] -> [Kinder ] 569
+[nd][en ] -> [nden ] 570
+[h][er] -> [her] 571
+[schwarz][en ] -> [schwarzen ] 572
+[ar][bei] -> [arbei] 573
+[er ][Hund ] -> [er Hund ] 574
+[m][en] -> [men] 575
+[ri][ll] -> [rill] 576
+[k][o] -> [ko] 577
+[.\u000aZwei ][Männer ] -> [.\u000aZwei Männer ] 578
+[z][wei ] -> [zwei ] 579
+[ch][t ] -> [cht ] 580
+[t][el] -> [tel] 581
+[d][a] -> [da] 582
+[Pers][on ] -> [Person ] 583
+[g][e ] -> [ge ] 584
+[e][s] -> [es] 585
+[t auf ][einer ] -> [t auf einer ] 586
+[t][o] -> [to] 587
+[ehr][er] -> [ehrer] 588
+[A][r] -> [Ar] 589
+[Wass][er] -> [Wasser] 590
+[B][ü] -> [Bü] 591
+[ch][t] -> [cht] 592
+[h][al] -> [hal] 593
+[m][en ] -> [men ] 594
+[u][ß] -> [uß] 595
+[a][s] -> [as] 596
+[F][el] -> [Fel] 597
+[in][ter] -> [inter] 598
+[e ][Frau ] -> [e Frau ] 599
+[w][ir] -> [wir] 600
+[e][.\u000aEin ] -> [e.\u000aEin ] 601
+[geh][t ] -> [geht ] 602
+[h][l] -> [hl] 603
+[Fahr][ra] -> [Fahrra] 604
+[ent][lang] -> [entlang] 605
+[und ][ein ] -> [und ein ] 606
+[S][k] -> [Sk] 607
+[G][eb] -> [Geb] 608
+[i][er ] -> [ier ] 609
+[h][e ] -> [he ] 610
+[lä][ch] -> [läch] 611
+[und ][eine ] -> [und eine ] 612
+[sprin][gt ] -> [springt ] 613
+[brau][n] -> [braun] 614
+[h][a] -> [ha] 615
+[et][w] -> [etw] 616
+[Ober][teil] -> [Oberteil] 617
+[ck][ ] -> [ck ] 618
+[.\u000aEin Mann ][mit ] -> [.\u000aEin Mann mit ] 619
+[äl][ter] -> [älter] 620
+[F][uß] -> [Fuß] 621
+[l][u] -> [lu] 622
+[.\u000aEine Gruppe ][von ] -> [.\u000aEine Gruppe von ] 623
+[B][all] -> [Ball] 624
+[n][a] -> [na] 625
+[ehrer][e ] -> [ehrere ] 626
+[s][einem ] -> [seinem ] 627
+[te][t ] -> [tet ] 628
+[b][li] -> [bli] 629
+[s][e ] -> [se ] 630
+[.\u000a][M] -> [.\u000aM] 631
+[Kl][eid] -> [Kleid] 632
+[Leu][te ] -> [Leute ] 633
+[a][b] -> [ab] 634
+[s][eh] -> [seh] 635
+[.\u000aEin Mann ][in einem ] -> [.\u000aEin Mann in einem ] 636
+[a][ ] -> [a ] 637
+[groß][en ] -> [großen ] 638
+[f][er] -> [fer] 639
+[ä][n] -> [än] 640
+[trä][gt ] -> [trägt ] 641
+[ot][o] -> [oto] 642
+[an][ge] -> [ange] 643
+[Sh][ir] -> [Shir] 644
+[mi][t] -> [mit] 645
+[am][er] -> [amer] 646
+[grü][nen ] -> [grünen ] 647
+[Geb][äu] -> [Gebäu] 648
+[z][ei] -> [zei] 649
+[ge][kleid] -> [gekleid] 650
+[l][äu] -> [läu] 651
+[H][and] -> [Hand] 652
+[J][ack] -> [Jack] 653
+[i][st] -> [ist] 654
+[B][au] -> [Bau] 655
+[einer ][Junge ] -> [einer Junge ] 656
+[geh][en ] -> [gehen ] 657
+[F][rei] -> [Frei] 658
+[L][u] -> [Lu] 659
+[z][eu] -> [zeu] 660
+[b][o] -> [bo] 661
+[H][inter] -> [Hinter] 662
+[i][gen ] -> [igen ] 663
+[v][ers] -> [vers] 664
+[G][ra] -> [Gra] 665
+[Man][n] -> [Mann] 666
+[on][n] -> [onn] 667
+[auf ][der ] -> [auf der ] 668
+[t ][mit ] -> [t mit ] 669
+[i][nd] -> [ind] 670
+[.\u000a][V] -> [.\u000aV] 671
+[isch][en ] -> [ischen ] 672
+[or][t] -> [ort] 673
+[.\u000aM][ehrere ] -> [.\u000aMehrere ] 674
+[läch][el] -> [lächel] 675
+[farben][en ] -> [farbenen ] 676
+[neben ][einem ] -> [neben einem ] 677
+[fü][r ] -> [für ] 678
+[Ko][pf] -> [Kopf] 679
+[an][z] -> [anz] 680
+[is][t ] -> [ist ] 681
+[Ba][s] -> [Bas] 682
+[Hinter][g] -> [Hinterg] 683
+[in ][die ] -> [in die ] 684
+[s][am] -> [sam] 685
+[i][h] -> [ih] 686
+[en][en ] -> [enen ] 687
+[ö][r] -> [ör] 688
+[ge][st] -> [gest] 689
+[im ][Frei] -> [im Frei] 690
+[.\u000aEine ][Person ] -> [.\u000aEine Person ] 691
+[l][e] -> [le] 692
+[etw][as ] -> [etwas ] 693
+[w][e] -> [we] 694
+[-][Shir] -> [-Shir] 695
+[eines ][Mädchen ] -> [eines Mädchen ] 696
+[Sch][u] -> [Schu] 697
+[a][sch] -> [asch] 698
+[T][-Shir] -> [T-Shir] 699
+[aar][ ] -> [aar ] 700
+[Sch][ne] -> [Schne] 701
+[T][isch] -> [Tisch] 702
+[R][o] -> [Ro] 703
+[an][k] -> [ank] 704
+[gel][ben ] -> [gelben ] 705
+[in][k] -> [ink] 706
+[si][er] -> [sier] 707
+[bei ][einem ] -> [bei einem ] 708
+[w][imm] -> [wimm] 709
+[u][ch] -> [uch] 710
+[ander][en ] -> [anderen ] 711
+[im ][Hinterg] -> [im Hinterg] 712
+[hin][ter ] -> [hinter ] 713
+[�][�] -> [�] 714
+[Mensch][en] -> [Menschen] 715
+[st][ü] -> [stü] 716
+[ro][t] -> [rot] 717
+[er][n] -> [ern] 718
+[w][er] -> [wer] 719
+[d][e ] -> [de ] 720
+[gekleid][et] -> [gekleidet] 721
+[an ][einer ] -> [an einer ] 722
+[en][st] -> [enst] 723
+[ä][nd] -> [änd] 724
+[in der ][N] -> [in der N] 725
+[li][ch] -> [lich] 726
+[ck][en ] -> [cken ] 727
+[ro][s] -> [ros] 728
+[und eine ][Frau ] -> [und eine Frau ] 729
+[bl][o] -> [blo] 730
+[r][enn] -> [renn] 731
+[li][e] -> [lie] 732
+[be][f] -> [bef] 733
+[un][ter ] -> [unter ] 734
+[it][ar] -> [itar] 735
+[F][oto] -> [Foto] 736
+[K][amer] -> [Kamer] 737
+[u][t] -> [ut] 738
+[si][at] -> [siat] 739
+[von ][einem ] -> [von einem ] 740
+[A][n] -> [An] 741
+[f][ ] -> [f ] 742
+[t][ra] -> [tra] 743
+[vor][bei] -> [vorbei] 744
+[Fuß][ball] -> [Fußball] 745
+[spiel][er ] -> [spieler ] 746
+[ss][en ] -> [ssen ] 747
+[en][.\u000a] -> [en.\u000a] 748
+[Jung][en ] -> [Jungen ] 749
+[el][ ] -> [el ] 750
+[st][ei] -> [stei] 751
+[Straß][e] -> [Straße] 752
+[y][ ] -> [y ] 753
+[ü][ber] -> [über] 754
+[Kleid][ung ] -> [Kleidung ] 755
+[in][g] -> [ing] 756
+[S][onn] -> [Sonn] 757
+[ck][t ] -> [ckt ] 758
+[p][o] -> [po] 759
+[bei][m ] -> [beim ] 760
+[ander][e ] -> [andere ] 761
+[G][eh] -> [Geh] 762
+[si][e ] -> [sie ] 763
+[na][ch ] -> [nach ] 764
+[in der N][ä] -> [in der Nä] 765
+[vor ][einer ] -> [vor einer ] 766
+[Menschen][men] -> [Menschenmen] 767
+[kl][eine ] -> [kleine ] 768
+[G][itar] -> [Gitar] 769
+[St][ad] -> [Stad] 770
+[kl][einen ] -> [kleinen ] 771
+[ei][t] -> [eit] 772
+[t auf ][dem ] -> [t auf dem ] 773
+[P][ark] -> [Park] 774
+[Wass][er ] -> [Wasser ] 775
+[läu][ft ] -> [läuft ] 776
+[häl][t ] -> [hält ] 777
+[Oberteil][ ] -> [Oberteil ] 778
+[em ][Hemd ] -> [em Hemd ] 779
+[.\u000aEin ][Junge ] -> [.\u000aEin Junge ] 780
+[hal][ten ] -> [halten ] 781
+[sch][n] -> [schn] 782
+[t][.\u000aEin Mann ] -> [t.\u000aEin Mann ] 783
+[ß][en ] -> [ßen ] 784
+[en][.\u000aZwei ] -> [en.\u000aZwei ] 785
+[a][p] -> [ap] 786
+[in der Nä][he ] -> [in der Nähe ] 787
+[or][ange] -> [orange] 788
+[fahr][er ] -> [fahrer ] 789
+[rill][e ] -> [rille ] 790
+[w][a] -> [wa] 791
+[fü][hr] -> [führ] 792
+[ge][b] -> [geb] 793
+[e][an] -> [ean] 794
+[o][b] -> [ob] 795
+[Sk][at] -> [Skat] 796
+[g][rau] -> [grau] 797
+[si][eh] -> [sieh] 798
+[B][er] -> [Ber] 799
+[Z][u] -> [Zu] 800
+[la][tz] -> [latz] 801
+[ig][e ] -> [ige ] 802
+[auf][en ] -> [aufen ] 803
+[si][nd ] -> [sind ] 804
+[ot][or] -> [otor] 805
+[en][.\u000aEine ] -> [en.\u000aEine ] 806
+[P][u] -> [Pu] 807
+[s][en ] -> [sen ] 808
+[am ][Stra] -> [am Stra] 809
+[eb][o] -> [ebo] 810
+[fähr][t ] -> [fährt ] 811
+[t][.\u000a] -> [t.\u000a] 812
+[ihr][e ] -> [ihre ] 813
+[ebo][ar] -> [eboar] 814
+[en, ][die ] -> [en, die ] 815
+[P][o] -> [Po] 816
+[.\u000aD][ie ] -> [.\u000aDie ] 817
+[sch][ä] -> [schä] 818
+[d][es ] -> [des ] 819
+[zu][g ] -> [zug ] 820
+[s ][und ] -> [s und ] 821
+[H][and ] -> [Hand ] 822
+[k][el] -> [kel] 823
+[et][ter] -> [etter] 824
+[ü][r] -> [ür] 825
+[zu][sam] -> [zusam] 826
+[Jack][e ] -> [Jacke ] 827
+[.\u000aV][ier ] -> [.\u000aVier ] 828
+[.\u000aEin ][jung] -> [.\u000aEin jung] 829
+[s][e] -> [se] 830
+[f][on] -> [fon] 831
+[ü][n] -> [ün] 832
+[Hu][nde ] -> [Hunde ] 833
+[b][el] -> [bel] 834
+[r][an] -> [ran] 835
+[H][aar] -> [Haar] 836
+[.\u000aD][er ] -> [.\u000aDer ] 837
+[, ][das ] -> [, das ] 838
+[l][o] -> [lo] 839
+[ihr][en ] -> [ihren ] 840
+[jung][e ] -> [junge ] 841
+[ber][ei] -> [berei] 842
+[ho][ch] -> [hoch] 843
+[po][sier] -> [posier] 844
+[Skat][eboar] -> [Skateboar] 845
+[d][un] -> [dun] 846
+[en][.\u000aEine Frau ] -> [en.\u000aEine Frau ] 847
+[Au][to] -> [Auto] 848
+[.\u000aEin Mann ][in ] -> [.\u000aEin Mann in ] 849
+[n][i] -> [ni] 850
+[de][ck] -> [deck] 851
+[ä][r] -> [är] 852
+[es ][Mädchen ] -> [es Mädchen ] 853
+[Sonn][en] -> [Sonnen] 854
+[l][ei] -> [lei] 855
+[.\u000aEin ][Mädchen ] -> [.\u000aEin Mädchen ] 856
+[trä][g] -> [träg] 857
+[w][eg] -> [weg] 858
+[brau][nen ] -> [braunen ] 859
+[P][fer] -> [Pfer] 860
+[a][siat] -> [asiat] 861
+[Fahrra][d ] -> [Fahrrad ] 862
+[Fahrra][d] -> [Fahrrad] 863
+[Ball][ ] -> [Ball ] 864
+[C][o] -> [Co] 865
+[vo][ll] -> [voll] 866
+[si][ch] -> [sich] 867
+[grü][n] -> [grün] 868
+[T][ri] -> [Tri] 869
+[il][d ] -> [ild ] 870
+[r][en] -> [ren] 871
+[ck][e] -> [cke] 872
+[et][t] -> [ett] 873
+[D][am] -> [Dam] 874
+[a][g] -> [ag] 875
+[er ][und ] -> [er und ] 876
+[J][ean] -> [Jean] 877
+[d][er] -> [der] 878
+[ar][t] -> [art] 879
+[.\u000aEin kl][einer Junge ] -> [.\u000aEin kleiner Junge ] 880
+[w][ach] -> [wach] 881
+[r][und ] -> [rund ] 882
+[B][u] -> [Bu] 883
+[ei][d ] -> [eid ] 884
+[wir][d ] -> [wird ] 885
+[Straß][en] -> [Straßen] 886
+[mit ][B] -> [mit B] 887
+[M][otor] -> [Motor] 888
+[a][f] -> [af] 889
+[sp][ri] -> [spri] 890
+[d][rau] -> [drau] 891
+[die ][Straße ] -> [die Straße ] 892
+[am][m] -> [amm] 893
+[b][et] -> [bet] 894
+[gel][b] -> [gelb] 895
+[h][en ] -> [hen ] 896
+[M][u] -> [Mu] 897
+[ol][z] -> [olz] 898
+[h][ell] -> [hell] 899
+[schau][t ] -> [schaut ] 900
+[ü][tz] -> [ütz] 901
+[wach][s] -> [wachs] 902
+[M][ik] -> [Mik] 903
+[Mann][, der ] -> [Mann, der ] 904
+[m][p] -> [mp] 905
+[s][eine ] -> [seine ] 906
+[ihr][ ] -> [ihr ] 907
+[T][e] -> [Te] 908
+[e][nd] -> [end] 909
+[ck][e ] -> [cke ] 910
+[G][el] -> [Gel] 911
+[E][r] -> [Er] 912
+[Ar][bei] -> [Arbei] 913
+[Menschenmen][ge ] -> [Menschenmenge ] 914
+[s][einen ] -> [seinen ] 915
+[fahr][en ] -> [fahren ] 916
+[St][u] -> [Stu] 917
+[we][g ] -> [weg ] 918
+[sch][lä] -> [schlä] 919
+[Kl][eid ] -> [Kleid ] 920
+[s][ein ] -> [sein ] 921
+[k][t] -> [kt] 922
+[zeu][g] -> [zeug] 923
+[Ba][b] -> [Bab] 924
+[e][t ] -> [et ] 925
+[al][s ] -> [als ] 926
+[f][or] -> [for] 927
+[ ][gekleidet] -> [ gekleidet] 928
+[.\u000aZwei ][Frauen ] -> [.\u000aZwei Frauen ] 929
+[Sch][wimm] -> [Schwimm] 930
+[S][e] -> [Se] 931
+[st][ell] -> [stell] 932
+[u][tz] -> [utz] 933
+[er ][Kleidung ] -> [er Kleidung ] 934
+[häl][t ein ] -> [hält ein ] 935
+[Gra][s] -> [Gras] 936
+[im Frei][en ] -> [im Freien ] 937
+[t][anz] -> [tanz] 938
+[H][ü] -> [Hü] 939
+[.\u000aEin kl][eines Mädchen ] -> [.\u000aEin kleines Mädchen ] 940
+[f][er ] -> [fer ] 941
+[V][er] -> [Ver] 942
+[f][en ] -> [fen ] 943
+[mach][t ] -> [macht ] 944
+[e][, ] -> [e, ] 945
+[H][olz] -> [Holz] 946
+[m][al] -> [mal] 947
+[.\u000aEine Frau ][in einem ] -> [.\u000aEine Frau in einem ] 948
+[asiat][isch] -> [asiatisch] 949
+[B][ank] -> [Bank] 950
+[w][ie ] -> [wie ] 951
+[eb][all] -> [eball] 952
+[il][d] -> [ild] 953
+[Hu][t ] -> [Hut ] 954
+[kleid][ung ] -> [kleidung ] 955
+[h][aar] -> [haar] 956
+[k][ur] -> [kur] 957
+[M][e] -> [Me] 958
+[er][en ] -> [eren ] 959
+[T-Shir][t ] -> [T-Shirt ] 960
+[Hu][nd] -> [Hund] 961
+[el][n ] -> [eln ] 962
+[ach][t] -> [acht] 963
+[Bas][eball] -> [Baseball] 964
+[g][ra] -> [gra] 965
+[mit ][dem ] -> [mit dem ] 966
+[d][ar] -> [dar] 967
+[K][a] -> [Ka] 968
+[M][au] -> [Mau] 969
+[an ][der ] -> [an der ] 970
+[kl][etter] -> [kletter] 971
+[\u000a][E] -> [\u000aE] 972
+[h][e] -> [he] 973
+[B][l] -> [Bl] 974
+[gest][rei] -> [gestrei] 975
+[in ][ein ] -> [in ein ] 976
+[el][m ] -> [elm ] 977
+[da][bei ] -> [dabei ] 978
+[R][ei] -> [Rei] 979
+[hin][unter] -> [hinunter] 980
+[S][and] -> [Sand] 981
+[ihr][em ] -> [ihrem ] 982
+[S][o] -> [So] 983
+[Mik][ro] -> [Mikro] 984
+[la][g] -> [lag] 985
+[ru][nd] -> [rund] 986
+[t][.\u000aEine ] -> [t.\u000aEine ] 987
+[Gebäu][de] -> [Gebäude] 988
+[renn][t ] -> [rennt ] 989
+[li][chen ] -> [lichen ] 990
+[F][lu] -> [Flu] 991
+[Kamer][a] -> [Kamera] 992
+[si][k] -> [sik] 993
+[ein][and] -> [einand] 994
+[gel][ ] -> [gel ] 995
+[braun][er Hund ] -> [brauner Hund ] 996
+[u][ck] -> [uck] 997
+[en][s] -> [ens] 998
+[Bü][r] -> [Bür] 999

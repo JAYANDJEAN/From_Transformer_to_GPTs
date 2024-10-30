@@ -1,3 +1,21 @@
+from datasets import load_dataset
+from trl import SFTConfig, SFTTrainer
+
+dataset = load_dataset("imdb", split="train")
+
+sft_config = SFTConfig(
+    dataset_text_field="text",
+    max_seq_length=512,
+    output_dir="/tmp",
+)
+trainer = SFTTrainer(
+    "facebook/opt-350m",
+    train_dataset=dataset,
+    args=sft_config,
+)
+trainer.train()
+
+
 import torch
 from transformers import GPT2Tokenizer
 from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
@@ -37,3 +55,15 @@ reward = [torch.tensor(1.0, device=model.pretrained_model.device)]
 
 # 6. train model with ppo
 train_stats = ppo_trainer.step([query_tensor[0]], [response_tensor[0]], reward)
+
+
+import torch
+from datasets import load_dataset
+from trl import PPOTrainer, PPOConfig, AutoModelForCausalLMWithValueHead
+
+'''
+https://github.com/hkproj/rlhf-ppo
+'''
+
+# Load all helpfulness/harmless subsets (share the same schema)
+dataset = load_dataset("Anthropic/hh-rlhf")

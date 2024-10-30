@@ -14,7 +14,7 @@ def check_spacy():
 def check_minbpe():
     tokenizer = BasicTokenizer()
     text = "A man in a blue shirt is standing on a ladder cleaning a window."
-    tokenizer.load("../02_transformer/bpe_tokenizer/minbpe-en.model")
+    tokenizer.load("../00_assets/tokenizers/en_de_minbpe/token-en.model")
     print([tokenizer.decode([i]) for i in tokenizer.encode(text)])
 
 
