@@ -1,11 +1,11 @@
-from utils import init_model, InstructionDataset
+from utils import init_model, InstructionDataset, ChatGLMTokenizer
 from llama import *
 import matplotlib.pyplot as plt
 from torch import Tensor
 import torch
 from modelsummary import summary
 from sentencepiece import SentencePieceProcessor
-from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
+
 import yaml
 from torch.utils.data import DataLoader
 
@@ -200,7 +200,7 @@ def check_tokenizer():
 
 
 def check_glm_tokenizer():
-    tokenizer_path = './chatglm_tokenizer/tokenizer.model'
+    tokenizer_path = '../00_assets/tokenizers/chatglm_sentencepiece/tokenizer.model'
     tokenizer = ChatGLMTokenizer(vocab_file=tokenizer_path)
     print('pad_token_id:', tokenizer.pad_token_id)
     print('bos_token_id:', tokenizer.bos_token_id)
@@ -218,7 +218,7 @@ def check_instruction_dataset():
     with open('../00_assets/yml/local_settings.yml', 'r') as file:
         setting = yaml.safe_load(file)
     data_input = setting['model_path'] + 'alpaca_gpt4_data_zh.json'
-    tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
+    tokenizer = ChatGLMTokenizer(vocab_file='../00_assets/tokenizers/chatglm_tokenizer/tokenizer.model')
     train_loader = DataLoader(InstructionDataset(data_input, tokenizer, max_length=256),
                               batch_size=1, pin_memory=False, drop_last=False,
                               shuffle=False, num_workers=0)
@@ -254,4 +254,4 @@ if __name__ == '__main__':
     # # check_tokenizer()
     # check_glm_tokenizer()
     # check_model_and_loss()
-    check_instruction_dataset()
+    check_glm_tokenizer()

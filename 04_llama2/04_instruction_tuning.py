@@ -1,8 +1,7 @@
 from torch.utils.data import Dataset
 from tqdm import tqdm
-from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 from timeit import default_timer as timer
-from utils import init_model, InstructionDataset
+from utils import init_model, InstructionDataset, ChatGLMTokenizer
 import torch
 import os
 import yaml
@@ -21,7 +20,7 @@ if __name__ == "__main__":
     config['init_from'] = 'resume'
     config['save_dir'] = save_dir
 
-    tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
+    tokenizer = ChatGLMTokenizer(vocab_file='../00_assets/tokenizers/chatglm_tokenizer/tokenizer.model')
 
     train_loader = torch.utils.data.DataLoader(InstructionDataset(data_input, tokenizer, max_length=256),
                                                batch_size=1, pin_memory=False, drop_last=False,

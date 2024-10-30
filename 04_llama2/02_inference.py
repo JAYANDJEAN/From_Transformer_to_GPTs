@@ -55,7 +55,7 @@ elif model_type == 'tiny':
     args.device = device
     model = LlamaForCausal(
         checkpoints_dir=setting['model_path'] + 'tiny_llama/',
-        tokenizer_path='./chatglm_tokenizer/tokenizer.model',
+        tokenizer_path='../00_assets/tokenizers/chatglm_tokenizer/tokenizer.model',
         tokenizer_tp='GLM',
         args=args
     )

@@ -23,9 +23,6 @@
 1. 参考 [PyTorch LLaMa](https://github.com/hkproj/pytorch-llama)、[Meta LLaMa](https://github.com/meta-llama/llama) 了解LLaMa模型的实现。 在本地环境中实现模型的推理。
 2. 参考 [Baby LLaMa-Chinese](https://github.com/DLLXW/baby-llama2-chinese) ，了解如何训练一个小型的中文LLaMa模型，并进行监督微调（SFT）和强化学习人类反馈（RLHF）。
 
-## CodeLLaMA
-
-1. 参考 [CodeLLaMA GitHub](https://github.com/meta-llama/codellama/tree/main)，了解CodeLLaMA的实现和应用。
 
 ## Distributed Training
 

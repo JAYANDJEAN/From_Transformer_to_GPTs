@@ -1,7 +1,6 @@
 from tqdm import tqdm
-from chatglm_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 from timeit import default_timer as timer
-from utils import init_model, process_wiki_clean, PretrainDataset
+from utils import init_model, process_wiki_clean, PretrainDataset, ChatGLMTokenizer
 from torch.utils.data import Dataset
 import torch
 import os
@@ -20,7 +19,7 @@ if __name__ == "__main__":
     with open('../00_assets/yml/local_settings.yml', 'r') as file:
         setting = yaml.safe_load(file)
 
-    tokenizer = ChatGLMTokenizer(vocab_file='./chatglm_tokenizer/tokenizer.model')
+    tokenizer = ChatGLMTokenizer(vocab_file='../00_assets/tokenizers/chatglm_sentencepiece/tokenizer.model')
     data_input = setting['model_path'] + 'wikipedia-cn-20230720-filtered.json'
     data_output = setting['model_path'] + 'wiki.bin'
     save_dir = os.path.join(setting['model_path'], 'tiny_llama')
