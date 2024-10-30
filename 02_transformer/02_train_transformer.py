@@ -3,12 +3,11 @@ from timeit import default_timer as timer
 from models import TransformerTorch
 from utils import generate_mask, generate, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
 from tqdm import tqdm
-import yaml
 import os
 from torch.utils.data import DataLoader
 
 
-def train_and_translate():
+def train_and_translate(config):
     def _epoch(model, dataloader, tp):
         if tp == 'train':
             model.train()
@@ -39,15 +38,9 @@ def train_and_translate():
                 pbar.update(1)
         return epoch_loss / len(list(dataloader))
 
-    with open('../00_assets/yml/translation.yml', 'r') as file:
-        config = yaml.safe_load(file)
-    with open('../00_assets/yml/local_settings.yml', 'r') as file:
-        setting = yaml.safe_load(file)
-    save_dir = os.path.join(setting['model_path'], 'translation')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    device = config['device']
+    save_dir = '../00_assets/models/'
+    os.makedirs(save_dir, exist_ok=True)
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     train_loader = DataLoader(TextDataset(dt='train'),
                               batch_size=config['batch_size'],
                               collate_fn=collate_fn,
@@ -56,6 +49,7 @@ def train_and_translate():
                             batch_size=config['batch_size'],
                             collate_fn=collate_fn,
                             shuffle=False)
+
     transformer = TransformerTorch(num_encoder_layers=config['num_encode'],
                                    num_decoder_layers=config['num_decode'],
                                    d_model=config['d_model'],
@@ -76,10 +70,9 @@ def train_and_translate():
         val_loss = _epoch(transformer, val_loader, 'eval')
         if train_loss < min_train_loss:
             min_train_loss = train_loss
-            torch.save(transformer.state_dict(), f'{save_dir}/translation_de_to_en.pth')
+            torch.save(transformer.state_dict(), f'{save_dir}translation_de_to_en.pth')
         end_time = timer()
-        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-               f"Val loss: {val_loss:.3f}, "
+        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val loss: {val_loss:.3f}, "
                f"Epoch time = {(end_time - start_time):.3f}s"))
     '''
     A trendy girl talking on her cellphone while gliding slowly down the street.
@@ -89,9 +82,22 @@ def train_and_translate():
         "Ein schickes Mädchen spricht mit dem Handy während sie langsam die Straße entlangschwebt.",
         "Eine Frau mit einer großen Geldbörse geht an einem Tor vorbei."
     ]
-    transformer.load_state_dict(torch.load(f'{save_dir}/translation_de_to_en.pth', map_location="cpu"))
+    transformer.load_state_dict(torch.load(f'{save_dir}translation_de_to_en.pth', map_location="cpu"))
     print("Translated sentence:", generate(transformer, src_sentences, device))
 
 
 if __name__ == '__main__':
-    train_and_translate()
+    train_config = {
+        'model_name': 'torch',
+        'batch_size': 128,
+        'num_epochs': 10,
+        'num_encode': 3,
+        'num_decode': 3,
+        'd_model': 512,
+        'n_head': 8,
+        'lr': 0.0001,
+        'beta_min': 0.9,
+        'beta_max': 0.98,
+        'eps': 1e-9
+    }
+    train_and_translate(train_config)

@@ -6,24 +6,8 @@ from tokenizers import Tokenizer
 
 src_lang = 'de'
 tgt_lang = 'en'
-tokenizers = {src_lang: Tokenizer.from_file("./bpe_tokenizer/token-de.json"),
-              tgt_lang: Tokenizer.from_file("./bpe_tokenizer/token-en.json")}
-
-
-def collate_fn(batch):
-    src_batch, tgt_batch = [], []
-    for src_text, tgt_text in batch:
-        output_de = tokenizers[src_lang].encode(src_text)
-        output_en = tokenizers[tgt_lang].encode(tgt_text)
-        src_batch.append(torch.as_tensor([tokenizers[src_lang].token_to_id("<bos>")] +
-                                         output_de.ids +
-                                         [tokenizers[src_lang].token_to_id("<eos>")]))
-        tgt_batch.append(torch.as_tensor([tokenizers[tgt_lang].token_to_id("<bos>")] +
-                                         output_en.ids +
-                                         [tokenizers[tgt_lang].token_to_id("<eos>")]))
-    src_batch = pad_sequence(src_batch, padding_value=tokenizers[src_lang].token_to_id("<pad>"), batch_first=True)
-    tgt_batch = pad_sequence(tgt_batch, padding_value=tokenizers[tgt_lang].token_to_id("<pad>"), batch_first=True)
-    return src_batch, tgt_batch
+tokenizers = {src_lang: Tokenizer.from_file("../00_assets/tokenizers/en_de_tokenizers/token-de.json"),
+              tgt_lang: Tokenizer.from_file("../00_assets/tokenizers/en_de_tokenizers/token-en.json")}
 
 
 def generate_mask(sz: int):
@@ -67,11 +51,27 @@ def generate(model: torch.nn.Module, src_sentences: List[str], device):
     return out_text
 
 
+def collate_fn(batch):
+    src_batch, tgt_batch = [], []
+    for src_text, tgt_text in batch:
+        output_de = tokenizers[src_lang].encode(src_text)
+        output_en = tokenizers[tgt_lang].encode(tgt_text)
+        src_batch.append(torch.as_tensor([tokenizers[src_lang].token_to_id("<bos>")] +
+                                         output_de.ids +
+                                         [tokenizers[src_lang].token_to_id("<eos>")]))
+        tgt_batch.append(torch.as_tensor([tokenizers[tgt_lang].token_to_id("<bos>")] +
+                                         output_en.ids +
+                                         [tokenizers[tgt_lang].token_to_id("<eos>")]))
+    src_batch = pad_sequence(src_batch, padding_value=tokenizers[src_lang].token_to_id("<pad>"), batch_first=True)
+    tgt_batch = pad_sequence(tgt_batch, padding_value=tokenizers[tgt_lang].token_to_id("<pad>"), batch_first=True)
+    return src_batch, tgt_batch
+
+
 class TextDataset(Dataset):
     def __init__(self, dt):
         assert dt in ('train', 'val')
-        german_file = f"../00_assets/de_en/{dt}.de"
-        english_file = f"../00_assets/de_en/{dt}.en"
+        german_file = f"../00_assets/data/de_en/{dt}.de"
+        english_file = f"../00_assets/data/de_en/{dt}.en"
         with open(german_file, 'r', encoding='utf-8') as f_de, \
                 open(english_file, 'r', encoding='utf-8') as f_en:
             self.src_texts = f_de.readlines()

@@ -14,6 +14,7 @@ from models import TransformerTorch
 
 
 def train_model(config):
+    # todo
     def _epoch(model, dataloader, tp):
         if tp == 'train':
             model.train()

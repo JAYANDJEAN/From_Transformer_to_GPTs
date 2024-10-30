@@ -52,7 +52,7 @@ def check_positional_encoding():
         plt.colorbar()
 
     plt.tight_layout()
-    plt.savefig('../00_assets/image/PE.png')
+    plt.show()
 
 
 def check_scale_dot_product_attention():
