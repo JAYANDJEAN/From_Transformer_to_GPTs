@@ -1,45 +1,14 @@
-import torch
-from timeit import default_timer as timer
-from models import TransformerTorch
-from utils import generate_mask, generate, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
-from tqdm import tqdm
 import os
+from timeit import default_timer as timer
+
+import torch
 from torch.utils.data import DataLoader
+
+from models import TransformerTorch
+from utils import generate, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers, one_epoch
 
 
 def train_and_translate(config):
-    def _epoch(model, dataloader, tp):
-        if tp == 'train':
-            model.train()
-        elif tp == 'eval':
-            model.eval()
-        epoch_loss = 0
-
-        with tqdm(total=len(list(dataloader)), desc=f'{tp}: Epoch {epoch}', unit='batch') as pbar:
-            for src, tgt in dataloader:
-                src = src.to(device)
-                tgt_input = tgt[:, :-1].to(device)
-                tgt_out = tgt[:, 1:].to(device)
-                src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
-                tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
-                src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
-                tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
-                tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                    src_padding_mask, tgt_padding_mask, src_padding_mask)
-                if tp == 'train':
-                    optimizer.zero_grad()
-                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                    loss.backward()
-                    optimizer.step()
-                    epoch_loss += loss.item()
-                elif tp == 'eval':
-                    loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                    epoch_loss += loss.item()
-                pbar.update(1)
-        return epoch_loss / len(list(dataloader))
-
-    save_dir = '../00_assets/models/'
-    os.makedirs(save_dir, exist_ok=True)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     train_loader = DataLoader(TextDataset(dt='train'),
                               batch_size=config['batch_size'],
@@ -66,31 +35,37 @@ def train_and_translate(config):
 
     for epoch in range(1, config['num_epochs'] + 1):
         start_time = timer()
-        train_loss = _epoch(transformer, train_loader, 'train')
-        val_loss = _epoch(transformer, val_loader, 'eval')
+        train_loss = one_epoch(transformer, optimizer, loss_fn, train_loader, device, 'train', epoch)
+        val_loss = one_epoch(transformer, optimizer, loss_fn, val_loader, device, 'eval', epoch)
         if train_loss < min_train_loss:
             min_train_loss = train_loss
-            torch.save(transformer.state_dict(), f'{save_dir}translation_de_to_en.pth')
+            torch.save(transformer.state_dict(), f"{config['save_dir']}translation_de_to_en.pth")
         end_time = timer()
-        print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val loss: {val_loss:.3f}, "
-               f"Epoch time = {(end_time - start_time):.3f}s"))
-    '''
-    A trendy girl talking on her cellphone while gliding slowly down the street.
-    A woman with a large purse is walking by a gate.
-    '''
+        print((f"Epoch {epoch}: Train loss = {train_loss:.3f}, Val loss = {val_loss:.3f}, "
+               f"time = {(end_time - start_time):.3f}s"))
+
     src_sentences = [
         "Ein schickes Mädchen spricht mit dem Handy während sie langsam die Straße entlangschwebt.",
+        # A trendy girl talking on her cellphone while gliding slowly down the street.
         "Eine Frau mit einer großen Geldbörse geht an einem Tor vorbei."
+        # A woman with a large purse is walking by a gate.
     ]
-    transformer.load_state_dict(torch.load(f'{save_dir}translation_de_to_en.pth', map_location="cpu"))
-    print("Translated sentence:", generate(transformer, src_sentences, device))
+    transformer.to('cpu')
+    transformer.load_state_dict(
+        torch.load(
+            f"{config['save_dir']}translation_de_to_en.pth",
+            map_location="cpu",
+            weights_only=True)
+    )
+    print("Translated sentence:", generate(transformer, src_sentences, 'cpu'))
 
 
 if __name__ == '__main__':
     train_config = {
         'model_name': 'torch',
+        'save_dir': '../00_assets/models/',
         'batch_size': 128,
-        'num_epochs': 10,
+        'num_epochs': 3,
         'num_encode': 3,
         'num_decode': 3,
         'd_model': 512,
@@ -100,4 +75,5 @@ if __name__ == '__main__':
         'beta_max': 0.98,
         'eps': 1e-9
     }
+    os.makedirs(train_config['save_dir'], exist_ok=True)
     train_and_translate(train_config)

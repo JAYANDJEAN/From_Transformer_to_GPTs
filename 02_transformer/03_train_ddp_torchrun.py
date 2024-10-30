@@ -1,125 +1,91 @@
+import os
+import warnings
+from timeit import default_timer as timer
+
 import torch
+from torch.distributed import init_process_group, destroy_process_group
+from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torch.nn.parallel import DistributedDataParallel
-from torch.distributed import init_process_group, destroy_process_group
-from timeit import default_timer as timer
-import warnings
-from pathlib import Path
-import argparse
-import os
 
-from utils import generate_mask, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
 from models import TransformerTorch
+from utils import one_epoch, TextDataset, src_lang, tgt_lang, collate_fn, tokenizers
 
 
 def train_model(config):
-    # todo
-    def _epoch(model, dataloader, tp):
-        if tp == 'train':
-            model.train()
-        elif tp == 'eval':
-            model.eval()
-        epoch_loss = 0
-
-        for src, tgt in dataloader:
-            src = src.to(device)
-            tgt_input = tgt[:, :-1].to(device)
-            tgt_out = tgt[:, 1:].to(device)
-            src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
-            tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
-            src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
-            tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
-            tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
-                                src_padding_mask, tgt_padding_mask, src_padding_mask)
-            if tp == 'train':
-                optimizer.zero_grad()
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                loss.backward()
-                optimizer.step()
-                epoch_loss += loss.item()
-            elif tp == 'eval':
-                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
-                epoch_loss += loss.item()
-
-        return epoch_loss / len(list(dataloader))
-
     assert torch.cuda.is_available(), "Training on CPU is not supported"
     device = torch.device("cuda")
-    save_dir = "./models"
-    Path(save_dir).mkdir(parents=True, exist_ok=True)
 
     train_loader = DataLoader(TextDataset(dt='train'),
-                              batch_size=config.batch_size,
+                              batch_size=config['batch_size'],
                               collate_fn=collate_fn,
                               shuffle=False,
                               sampler=DistributedSampler(TextDataset(dt='train'), shuffle=True))
     val_loader = DataLoader(TextDataset(dt='val'),
-                            batch_size=config.batch_size,
+                            batch_size=config['batch_size'],
                             collate_fn=collate_fn,
                             shuffle=False)
 
-    transformer = TransformerTorch(num_encoder_layers=3,
-                                   num_decoder_layers=3,
-                                   d_model=config.d_model,
-                                   n_head=config.n_head,
+    transformer = TransformerTorch(num_encoder_layers=config['num_encode'],
+                                   num_decoder_layers=config['num_decode'],
+                                   d_model=config['d_model'],
+                                   n_head=config['n_head'],
                                    src_vocab_size=tokenizers[src_lang].get_vocab_size(),
                                    tgt_vocab_size=tokenizers[tgt_lang].get_vocab_size(),
                                    ).to(device)
+    transformer = DistributedDataParallel(transformer, device_ids=[config['local_rank']])
 
-    transformer = DistributedDataParallel(transformer, device_ids=[config.local_rank])
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=config.lr, eps=1e-9)
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=config['lr'], eps=1e-9)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizers[tgt_lang].token_to_id("<pad>"),
                                         label_smoothing=0.1).to(device)
 
-    for epoch in range(config.num_epochs):
+    for epoch in range(config['num_epochs']):
         torch.cuda.empty_cache()
         start_time = timer()
 
-        train_loss = _epoch(transformer, train_loader, 'train')
-        val_loss = _epoch(transformer, val_loader, 'eval')
+        train_loss = one_epoch(transformer, optimizer, loss_fn, train_loader, device, 'train', epoch)
+        val_loss = one_epoch(transformer, optimizer, loss_fn, val_loader, device, 'eval', epoch)
 
         end_time = timer()
-        print((f"GPU: {config.local_rank}, Epoch: {epoch}, Train loss: {train_loss:.3f}, "
-               f"Val loss: {val_loss:.3f}, Epoch time: {(end_time - start_time):.3f}s"))
+        print((f"Epoch {epoch}: GPU = {config['local_rank']}, Train loss = {train_loss:.3f}, "
+               f"Val loss = {val_loss:.3f}, time = {(end_time - start_time):.3f}s"))
 
         # Only run validation and checkpoint saving on the rank 0 node
-        if config.global_rank == 0:
-            torch.save(transformer.state_dict(), f'{save_dir}/translation_{epoch}.pth')
+        if config['global_rank'] == 0:
+            torch.save(transformer.state_dict(), f"{config['save_dir']}translation_de_to_en_ddp.pth")
 
 
 if __name__ == '__main__':
-    # torchrun --nnodes=1 --nproc_per_node=2 04_ddp_train.py
+    # torchrun --nnodes=1 --nproc_per_node=1 03_train_ddp_torchrun.py
+    train_config = {
+        'model_name': 'torch',
+        'save_dir': '../00_assets/models/',
+        'batch_size': 128,
+        'num_epochs': 3,
+        'num_encode': 3,
+        'num_decode': 3,
+        'd_model': 512,
+        'n_head': 8,
+        'lr': 0.0001,
+        'beta_min': 0.9,
+        'beta_max': 0.98,
+        'eps': 1e-9,
+        'local_rank': int(os.environ['LOCAL_RANK']),
+        'global_rank': int(os.environ['RANK'])
+    }
     warnings.filterwarnings("ignore")
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--num_epochs', type=int, default=10)
-    parser.add_argument('--lr', type=float, default=0.0001)
-    parser.add_argument('--d_model', type=int, default=512)
-    parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--model_folder', type=str, default='./model/')
+    os.makedirs(train_config['save_dir'], exist_ok=True)
 
-    args = parser.parse_args()
-    args.local_rank = int(os.environ['LOCAL_RANK'])
-    args.global_rank = int(os.environ['RANK'])
-
-    assert args.local_rank != -1, "LOCAL_RANK environment variable not set"
-    assert args.global_rank != -1, "RANK environment variable not set"
-
-    # Print configuration (only once per server)
-    if args.local_rank == 0:
-        print("Configuration:")
-        for key, value in args.__dict__.items():
-            print(f"{key:>20}: {value}")
-        print('-' * 50)
+    assert train_config['local_rank'] != -1, "LOCAL_RANK environment variable not set"
+    assert train_config['global_rank'] != -1, "RANK environment variable not set"
 
     # Setup distributed training
     init_process_group(backend='nccl')
-    torch.cuda.set_device(args.local_rank)
+    torch.cuda.set_device(train_config['local_rank'])
 
     # Train the model
-    train_model(args)
+    train_model(train_config)
 
     # Clean up distributed training
     destroy_process_group()

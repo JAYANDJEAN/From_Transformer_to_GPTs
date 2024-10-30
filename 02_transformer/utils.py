@@ -1,13 +1,50 @@
+from typing import List
+
 import torch
+from tokenizers import Tokenizer
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
-from typing import List
-from tokenizers import Tokenizer
+from tqdm import tqdm
 
 src_lang = 'de'
 tgt_lang = 'en'
 tokenizers = {src_lang: Tokenizer.from_file("../00_assets/tokenizers/en_de_tokenizers/token-de.json"),
               tgt_lang: Tokenizer.from_file("../00_assets/tokenizers/en_de_tokenizers/token-en.json")}
+
+
+def one_epoch(model, optimizer, loss_fn, dataloader, device, tp, epoch):
+    def predict(src, tgt):
+        src = src.to(device)
+        tgt_input = tgt[:, :-1].to(device)
+        tgt_out = tgt[:, 1:].to(device)
+        src_mask = torch.zeros((src.shape[1], src.shape[1])).to(device)
+        tgt_mask = generate_mask(tgt_input.shape[1]).to(device)
+        src_padding_mask = (src == tokenizers[src_lang].token_to_id("<pad>")).to(device)
+        tgt_padding_mask = (tgt_input == tokenizers[tgt_lang].token_to_id("<pad>")).to(device)
+        tgt_predict = model(src, tgt_input, src_mask, tgt_mask,
+                            src_padding_mask, tgt_padding_mask, src_padding_mask)
+        return tgt_predict, tgt_out
+
+    epoch_loss = 0
+    if tp == 'train':
+        model.train()
+        with tqdm(total=len(list(dataloader)), desc=f'Epoch {epoch}', unit='batch') as pbar:
+            for src, tgt in dataloader:
+                tgt_predict, tgt_out = predict(src, tgt)
+                optimizer.zero_grad()
+                loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.item()
+                pbar.update(1)
+    elif tp == 'eval':
+        model.eval()
+        for src, tgt in dataloader:
+            tgt_predict, tgt_out = predict(src, tgt)
+            loss = loss_fn(tgt_predict.reshape(-1, tgt_predict.shape[-1]), tgt_out.reshape(-1))
+            epoch_loss += loss.item()
+
+    return epoch_loss / len(list(dataloader))
 
 
 def generate_mask(sz: int):
@@ -23,6 +60,7 @@ def generate(model: torch.nn.Module, src_sentences: List[str], device):
     src_tensor = pad_sequence(src_batch, padding_value=tokenizers[src_lang].token_to_id("<pad>"), batch_first=True)
 
     batch_size, seq_len = src_tensor.shape
+    src_tensor = src_tensor.to(device)
     src_mask = (torch.zeros(seq_len, seq_len)).to(device)
     src_padding_mask = (src_tensor == tokenizers[src_lang].token_to_id("<pad>")).to(device)
     # memory: torch.Size([batch_size, seq_len, d_model])
