@@ -11,35 +11,6 @@ def generate_mask(sz: int):
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
-def prepare_dataset_eli5(block_size: int, tokenizer):
-    eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
-    eli5 = eli5.train_test_split(test_size=0.2)
-    eli5 = eli5.flatten()
-
-    def preprocess_function(examples):
-        return tokenizer([" ".join(x) for x in examples["answers.text"]])
-
-    def group_texts(examples):
-        # Concatenate all texts.
-        concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
-        total_length = len(concatenated_examples[list(examples.keys())[0]])
-        # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
-        # customize this part to your needs.
-        if total_length >= block_size:
-            total_length = (total_length // block_size) * block_size
-        # Split by chunks of block_size.
-        result = {
-            k: [t[i: i + block_size] for i in range(0, total_length, block_size)]
-            for k, t in concatenated_examples.items()
-        }
-        result["labels"] = result["input_ids"].copy()  # 不同！！！！！！！gpt
-        return result
-
-    tokenized_eli5 = eli5.map(preprocess_function, batched=True, num_proc=4, remove_columns=eli5["train"].column_names)
-    dataset = tokenized_eli5.map(group_texts, batched=True, num_proc=4)
-    return dataset
-
-
 def prepare_dataset_books(tokenizer):
     def pre_process(examples):
         prefix = "translate German to English: "
@@ -51,29 +22,9 @@ def prepare_dataset_books(tokenizer):
         return model_inputs
 
     books = load_dataset("opus_books", "de-en")
-    books = books["train"].train_test_split(test_size=0.2)
+    books = books["train"].train_test_split(test_size=0.1)
     dataset = books.map(pre_process, batched=True)
     return dataset
-
-
-def prepare_loader_from_set_eli5(batch_size: int, tokenizer):
-    eli5 = load_dataset("eli5_category", split="train[:5000]", trust_remote_code=True)
-    eli5 = eli5.train_test_split(test_size=0.2)
-    eli5 = eli5.flatten()
-
-    # 对于已有数据集，把处理逻辑放在collate_fn
-    def collate_fn(batch):
-        res = []
-        for sample in batch:
-            encoded_input = tokenizer(sample['title'], return_tensors='pt')
-            res.append(encoded_input['input_ids'].squeeze())
-        res_batch = pad_sequence(res, padding_value=tokenizer.pad_token_id, batch_first=True)
-        mask = (res_batch != tokenizer.pad_token_id).int()
-        return res_batch, mask
-
-    train_dataloader = DataLoader(eli5['train'], batch_size=batch_size, collate_fn=collate_fn)
-    test_dataloader = DataLoader(eli5['test'], batch_size=batch_size, collate_fn=collate_fn)
-    return train_dataloader, test_dataloader
 
 
 def prepare_loader_from_file(batch_size, src_tokenizer, tgt_vocabs, csv_file, columns):

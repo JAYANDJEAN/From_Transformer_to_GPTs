@@ -1,7 +1,7 @@
 from transformers import RobertaTokenizer, RobertaModel, AutoModel, AutoTokenizer
 from modelsummary import summary
 import torch
-from utils import prepare_loader_from_set_eli5, prepare_loader_from_file, prepare_dataset_books
+from utils import prepare_loader_from_file, prepare_dataset_books
 
 BATCH_SIZE = 64
 SRC_SEQ_LEN = 17
@@ -40,49 +40,6 @@ def check_mlm_model():
     print("Total trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
 
-def check_mlm_forward():
-    tokenizer = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
-    model = RobertaModel.from_pretrained("distilbert/distilroberta-base")
-    print('=================tokenizer=======================')
-    # encode/decode one sentence
-    text = "Why there was a 'leap second' added to the end of 2016?"
-    encode = tokenizer(text, return_tensors='pt')
-    print(encode['input_ids'])
-    print(tokenizer.decode(encode['input_ids'].squeeze()))
-
-    train_dataloader, _ = prepare_loader_from_set_eli5(BATCH_SIZE, tokenizer)
-    _, (src, src_mask) = next(enumerate(train_dataloader))
-    # 展示第一条结果，应该和上面的encode结果是一样的
-    print(src[0, :])
-    print(src_mask[0, :])
-    print('=================forward=======================')
-    output = model(input_ids=src, attention_mask=src_mask, output_hidden_states=True)
-    memory = output.last_hidden_state
-    pooler_output = output.pooler_output
-    print(memory.shape)  # torch.Size([64, 56, 768])
-    print(pooler_output.shape)  # torch.Size([64, 768])
-    index = 0
-    # 这里 pooler 和 last_hidden_state 的第一个为什么不相同呢？是因为 pooler 还经过一个 nn.Linear。
-    # this returns the classification token after processing through a linear layer and a tanh activation function.
-    print(memory[0, index, :10])
-    print(output.hidden_states[-1][0, index, :10])
-    print(pooler_output[0, :10])
-
-
-
-def check_gpt_model():
-    text = "Kontrakan Pak Haji Ewok, RT.1/RW.6, Kp. Jati Pilar, Kab. Bekasi, Jawa Barat 17530, Indonesia"
-    model = AutoModel.from_pretrained("openai-community/gpt2")
-    tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
-    encode = tokenizer(text, return_tensors='pt')
-    print('vocab_size:', tokenizer.vocab_size)
-
-    output = model(**encode)
-    last_hidden_state = output.last_hidden_state
-    past_key_values = output.past_key_values
-    print(last_hidden_state.shape)  # torch.Size([1, 41, 768])
-
-
 def check_custom_data():
     tokenizer = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
     csv_file = '../00_assets/csv/addr_to_geo_min.csv'
@@ -106,10 +63,23 @@ def check_custom_data():
 
 
 def check_opus_books():
-    tokenizer = RobertaTokenizer.from_pretrained("distilbert/distilroberta-base")
+    tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")
+    print("All special tokens:", tokenizer.special_tokens_map)
+    print("eos_token_id:", tokenizer.eos_token_id)
+    print("pad_token_id:", tokenizer.pad_token_id)
+    print("unk_token_id:", tokenizer.unk_token_id)
+    num_case = 3
     dataset = prepare_dataset_books(tokenizer)
-    print(dataset)
+    input_ids = dataset['train']['input_ids'][:num_case]
+    translation = dataset['train']['translation'][:num_case]
+    labels = dataset['train']['labels'][:num_case]
+    print('=' * 70)
+    for i in range(num_case):
+        print("de:", translation[i]['de'])
+        print("de ids: ", input_ids[i])
+        print("en: ", translation[i]['en'])
+        print("en ids: ", labels[i])
 
 
 if __name__ == '__main__':
-    check_mlm_forward()
+    check_opus_books()

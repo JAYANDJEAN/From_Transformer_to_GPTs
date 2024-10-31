@@ -5,7 +5,6 @@ import evaluate
 import numpy as np
 from utils import prepare_dataset_books
 
-# T5本身就是encode+decode，所以ft不需要改变模型结构，只要加自有数据进来就行。
 checkpoint = "google-t5/t5-small"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
@@ -38,7 +37,7 @@ data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=checkpoint)
 metric = evaluate.load("sacrebleu")
 
 training_args = Seq2SeqTrainingArguments(
-    output_dir="awesome_opus_books_model",
+    output_dir="../00_assets/models/t5-small-finetune-opus-books",
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     per_device_train_batch_size=16,
@@ -60,8 +59,8 @@ trainer = Seq2SeqTrainer(
     compute_metrics=compute_metrics,
 )
 
-# trainer.train()
-#
-# text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
+trainer.train()
+
+text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
 # translator = pipeline("translation_xx_to_yy", model="awesome_opus_books_model")
 # translator(text)
