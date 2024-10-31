@@ -4,11 +4,13 @@ from transformers import AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2
 import evaluate
 import numpy as np
 from utils import prepare_dataset_books
+import os
 
 checkpoint = "google-t5/t5-small"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
 dataset = prepare_dataset_books(tokenizer)
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def post_process(preds, labels):
