@@ -3,11 +3,9 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from torch.nn.utils.rnn import pad_sequence
 import torch
-import numpy as np
 
 
 def generate_mask(sz: int):
-    # 生成一个下三角矩阵
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
 
@@ -25,6 +23,36 @@ def prepare_dataset_books(tokenizer):
     books = books["train"].train_test_split(test_size=0.1)
     dataset = books.map(pre_process, batched=True)
     return dataset
+
+
+def prepare_dataset_eli5(tokenizer):
+    block_size = 128
+    eli5 = load_dataset("eli5_category", split="train[:5000]")
+    eli5 = eli5.train_test_split(test_size=0.2)
+    eli5 = eli5.flatten()
+
+    tokenized_eli5 = eli5.map(
+        lambda x: tokenizer([" ".join(x) for x in x["answers.text"]]),
+        batched=True,
+        num_proc=4,
+        remove_columns=eli5["train"].column_names,
+    )
+
+    def group_texts(examples):
+        concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
+        total_length = len(concatenated_examples[list(examples.keys())[0]])
+        if total_length >= block_size:
+            total_length = (total_length // block_size) * block_size
+        result = {
+            k: [t[i: i + block_size] for i in range(0, total_length, block_size)]
+            for k, t in concatenated_examples.items()
+        }
+        result["labels"] = result["input_ids"].copy()
+        return result
+
+    lm_dataset = tokenized_eli5.map(group_texts, batched=True, num_proc=4)
+
+    return lm_dataset
 
 
 def prepare_loader_from_file(batch_size, src_tokenizer, tgt_vocabs, csv_file, columns):
@@ -72,36 +100,3 @@ def prepare_loader_from_file(batch_size, src_tokenizer, tgt_vocabs, csv_file, co
                       collate_fn=collate_fn,
                       shuffle=False)
     return train_, val_, test_
-
-
-def generate(model, tokenizer, dataloader, tgt_vocab, config):
-    def int_to_string(int_array):
-        return ''.join([tgt_vocab.get(val, '-') for val in int_array])
-
-    model.eval()
-    res_pred = []
-    res_true = []
-    device = config['device']
-    for src, src_mask, tgt in dataloader:
-        btz, _ = src.shape
-        src = src.to(device)
-        src_mask = src_mask.to(device)
-        memory = model.encode(src, src_mask).to(device)
-        ys = torch.ones(btz, 1).fill_(tokenizer.bos_token_id).type(torch.long).to(device)
-        max_len = 13 if config['geo_code_type'] == 'geohash' else 17
-        for i in range(max_len):
-            tgt_mask = (generate_mask(ys.size(1))).to(device)
-            out = model.decode(ys, memory, tgt_mask)
-            prob = model.generator(out[:, -1, :])
-            next_word = torch.argmax(prob, dim=1).unsqueeze(1)
-            ys = torch.cat([ys, next_word], dim=1)
-
-        predict = ys[:, 1:-1].cpu().numpy()
-        tgt = tgt[:, 1:-1].cpu().numpy()
-        res_pred.append(np.apply_along_axis(int_to_string, axis=1, arr=predict))
-        res_true.append(np.apply_along_axis(int_to_string, axis=1, arr=tgt))
-
-    concat_pred = np.concatenate(res_pred)
-    concat_true = np.concatenate(res_true)
-    df = pd.DataFrame({'geo_true': concat_true, 'geo_pred': concat_pred})
-    df.to_csv(f"../00_assets/csv/result_{config['model_version']}.csv", index=False)

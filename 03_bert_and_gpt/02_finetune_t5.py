@@ -1,10 +1,11 @@
 from transformers import (AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM,
-                          Seq2SeqTrainingArguments, Seq2SeqTrainer)
+                          Seq2SeqTrainingArguments, Seq2SeqTrainer, pipeline)
 import evaluate
 import numpy as np
 from utils import prepare_dataset_books
 import os
 
+# https://huggingface.co/docs/transformers/tasks/translation
 checkpoint = "google-t5/t5-small"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
@@ -14,23 +15,18 @@ data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=checkpoint)
 metric = evaluate.load("sacrebleu")
 
 
-def post_process(preds, labels):
-    preds = [pred.strip() for pred in preds]
-    labels = [[label.strip()] for label in labels]
-    return preds, labels
-
-
-def compute_metrics(eval_preds):
-    preds, labels = eval_preds
-    if isinstance(preds, tuple):
-        preds = preds[0]
-    decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    decoded_preds, decoded_labels = post_process(decoded_preds, decoded_labels)
-    result = metric.compute(predictions=decoded_preds, references=decoded_labels)
+def compute_metrics(eval_predicts):
+    pred, label = eval_predicts
+    if isinstance(pred, tuple):
+        pred = pred[0]
+    label = np.where(label != -100, label, tokenizer.pad_token_id)
+    pred_decoded = tokenizer.batch_decode(pred, skip_special_tokens=True)
+    label_decoded = tokenizer.batch_decode(label, skip_special_tokens=True)
+    pred_decoded = [pred.strip() for pred in pred_decoded]
+    label_decoded = [[label.strip()] for label in label_decoded]
+    result = metric.compute(predictions=pred_decoded, references=label_decoded)
     result = {"bleu": result["score"]}
-    prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
+    prediction_lens = [np.count_nonzero(p != tokenizer.pad_token_id) for p in pred]
     result["gen_len"] = np.mean(prediction_lens)
     result = {k: round(v, 4) for k, v in result.items()}
     return result
@@ -38,12 +34,11 @@ def compute_metrics(eval_preds):
 
 training_args = Seq2SeqTrainingArguments(
     output_dir="../00_assets/models/t5-small-finetune-opus-books",
-    evaluation_strategy="steps",  # 每个 epoch 结束后进行评估
+    evaluation_strategy="steps",
     save_strategy="epoch",
-    logging_steps=10,
-    eval_steps=100,
-
-    num_train_epochs=2,
+    logging_steps=100,
+    eval_steps=1000,
+    num_train_epochs=3,
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
@@ -66,6 +61,6 @@ trainer = Seq2SeqTrainer(
 
 trainer.train()
 
-# text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
-# translator = pipeline("translation_xx_to_yy", model="awesome_opus_books_model")
-# translator(text)
+text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
+translator = pipeline("translation_xx_to_yy", model="../00_assets/models/t5-small-finetune-opus-books")
+translator(text)
