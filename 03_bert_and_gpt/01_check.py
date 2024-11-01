@@ -1,24 +1,18 @@
 from transformers import AutoTokenizer
 from modelsummary import summary
-from utils import prepare_dataset_books
+from utils import prepare_dataset_books, prepare_dataset_geo
 import string
 
 
-def check_tokenizer():
-    gh = 'qqw7rh5u0r5q'
+def check_tokenizer_and_geo():
     tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")
-    print("eos_token_id:", tokenizer.eos_token_id)
-    print("pad_token_id:", tokenizer.pad_token_id)
-    print("unk_token_id:", tokenizer.unk_token_id)
     print("raw number of tokenizer:", len(tokenizer))
     new_tokens = [f"<%{i}>" for i in string.ascii_lowercase]
     new_tokens += [f"<%{i}>" for i in range(10)]
-    print(new_tokens)
-    gh_new = ''.join([f"<%{i}>" for i in gh])
     tokenizer.add_tokens(new_tokens, special_tokens=True)
     print("new number of tokenizer:", len(tokenizer))
-    print(tokenizer.encode(gh))
-    print(tokenizer.encode(gh_new))
+    t_train, t_val, t_test = prepare_dataset_geo(tokenizer)
+    print(t_train[:3]['labels'])
 
 
 def check_opus_books():
@@ -44,4 +38,4 @@ def check_opus_books():
 
 
 if __name__ == '__main__':
-    check_opus_books()
+    check_tokenizer_and_geo()

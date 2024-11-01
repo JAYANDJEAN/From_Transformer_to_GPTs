@@ -5,6 +5,7 @@ from utils import prepare_dataset_eli5
 
 
 # https://huggingface.co/docs/transformers/tasks/language_modeling
+# 这里没啥预测
 model_id = "distilbert/distilgpt2"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(model_id)

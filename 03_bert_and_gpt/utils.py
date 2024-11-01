@@ -55,7 +55,25 @@ def prepare_dataset_eli5(tokenizer):
     return lm_dataset
 
 
-def prepare_loader_from_file(batch_size, src_tokenizer, tgt_vocabs, csv_file, columns):
+def prepare_dataset_geo(tokenizer):
+    dataset = load_dataset("csv", data_files="../00_assets/data/addr_to_geo.csv")
+    train_dataset = dataset['train'].filter(lambda example: example['dt'] == 'train')
+    val_dataset = dataset['train'].filter(lambda example: example['dt'] == 'val')
+    test_dataset = dataset['train'].filter(lambda example: example['dt'] == 'test')
+
+    def preprocess_function(examples):
+        inputs = [example for example in examples["address"]]
+        targets = [''.join([f"<%{i}>" for i in example]) for example in examples["geohash"]]
+        model_inputs = tokenizer(inputs, text_target=targets, max_length=128, truncation=True)
+        return model_inputs
+
+    tokenized_train = train_dataset.map(preprocess_function, batched=True)
+    tokenized_val = val_dataset.map(preprocess_function, batched=True)
+    tokenized_test = test_dataset.map(preprocess_function, batched=True)
+    return tokenized_train, tokenized_val, tokenized_test
+
+
+def prepare_torch_dataset(batch_size, src_tokenizer, tgt_vocabs, csv_file, columns):
     # 对于大型文件，使用Dataset，避免一次性加载到内存，处理逻辑依然放在collate_fn，因为需要拿到batch内所有数据
     class CustomDataset(Dataset):
         def __init__(self, file_path, tp, columns_use):
