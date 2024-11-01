@@ -1,5 +1,5 @@
 from transformers import (AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM,
-                          Seq2SeqTrainingArguments, Seq2SeqTrainer, pipeline)
+                          Seq2SeqTrainingArguments, Seq2SeqTrainer)
 import evaluate
 from utils import prepare_dataset_geo
 import string
@@ -85,14 +85,13 @@ def compute_metrics_geo(eval_outputs):
 
 training_args = Seq2SeqTrainingArguments(
     output_dir="../00_assets/models/t5-small-finetune-geo",
-    evaluation_strategy="steps",
+    evaluation_strategy="epoch",
     save_strategy="epoch",
     logging_steps=100,
-    eval_steps=1000,
-    num_train_epochs=3,
+    num_train_epochs=50,
     learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,
     weight_decay=0.01,
     save_total_limit=3,
     predict_with_generate=True,
