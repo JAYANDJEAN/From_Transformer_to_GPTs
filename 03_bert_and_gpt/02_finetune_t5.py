@@ -1,18 +1,17 @@
+import os
+import re
+import string
+import evaluate
+import geohash2
+from geopy.distance import geodesic
+from s2sphere import CellId
 from transformers import (AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM,
                           Seq2SeqTrainingArguments, Seq2SeqTrainer)
-import evaluate
 from utils import prepare_dataset_geo
-import string
-import re
-import os
-import geohash2
-from s2sphere import CellId
-from geopy.distance import geodesic
 
 # https://huggingface.co/docs/transformers/tasks/translation
 
 model_id = "google-t5/t5-small"
-
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 new_tokens = [f"<%{i}>" for i in string.ascii_lowercase]
 new_tokens += [f"<%{i}>" for i in range(10)]
@@ -20,6 +19,7 @@ tokenizer.add_tokens(new_tokens, special_tokens=True)
 
 model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
 model.resize_token_embeddings(len(tokenizer))
+print(f"模型的参数总量: {sum(p.numel() for p in model.parameters())}")
 
 t_train, t_val, t_test = prepare_dataset_geo(tokenizer)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -67,11 +67,11 @@ def compute_metrics_geo(eval_outputs):
     results = [cal_distance(pred, label, 'geohash') for pred, label in zip(predictions_decode, labels_decode)]
     num = len(results)
     error_geo = sum(item is None for item in results) / num
-    acc_100 = sum(isinstance(item, (int, float)) and item < 100 for item in results)
-    acc_200 = sum(isinstance(item, (int, float)) and item < 200 for item in results)
-    acc_500 = sum(isinstance(item, (int, float)) and item < 500 for item in results)
-    error_5000 = sum(isinstance(item, (int, float)) and item > 5000 for item in results)
-    error_10000 = sum(isinstance(item, (int, float)) and item > 10000 for item in results)
+    acc_100 = sum(isinstance(item, (int, float)) and item < 100 for item in results) / num
+    acc_200 = sum(isinstance(item, (int, float)) and item < 200 for item in results) / num
+    acc_500 = sum(isinstance(item, (int, float)) and item < 500 for item in results) / num
+    error_5000 = sum(isinstance(item, (int, float)) and item > 5000 for item in results) / num
+    error_10000 = sum(isinstance(item, (int, float)) and item > 10000 for item in results) / num
     result = {
         'acc_100': acc_100,
         'acc_200': acc_200,
