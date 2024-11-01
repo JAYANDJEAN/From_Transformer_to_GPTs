@@ -27,6 +27,10 @@ class PositionalEncoding(nn.Module):
 
 
 class EncoderDecoderModel(nn.Module):
+    """
+    预训练的model + TransformerDecoder
+    """
+
     def __init__(self, model_id, tgt_vocab_size, n_layers=2, n_heads=4, dropout_rate=0.1):
         super().__init__()
 

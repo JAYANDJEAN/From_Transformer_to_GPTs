@@ -11,6 +11,13 @@ tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
 dataset = prepare_dataset_books(tokenizer)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+"""
+具体来说，data_collator 的作用包括：
+1. 动态填充批数据：将不同长度的输入序列填充到相同长度，以满足批处理的形状要求，避免因长度不一致而导致的错误。
+2. 创建注意力掩码：对于填充的部分生成相应的注意力掩码，确保模型在训练或推理时忽略填充部分。
+3. 处理特殊任务需求：针对特定任务，data_collator 还可以负责其他数据处理步骤，比如在语言模型任务中，
+   创建输入序列的遮蔽标签或随机遮蔽部分词汇（如用于 Masked Language Modeling）。
+"""
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=checkpoint)
 metric = evaluate.load("sacrebleu")
 
