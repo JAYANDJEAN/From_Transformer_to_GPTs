@@ -1,6 +1,5 @@
-from datasets import load_dataset
-from transformers import AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM, Seq2SeqTrainingArguments, \
-    Seq2SeqTrainer
+from transformers import (AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM,
+                          Seq2SeqTrainingArguments, Seq2SeqTrainer)
 import evaluate
 import numpy as np
 from utils import prepare_dataset_books
@@ -11,6 +10,8 @@ tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
 dataset = prepare_dataset_books(tokenizer)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=checkpoint)
+metric = evaluate.load("sacrebleu")
 
 
 def post_process(preds, labels):
@@ -35,20 +36,22 @@ def compute_metrics(eval_preds):
     return result
 
 
-data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=checkpoint)
-metric = evaluate.load("sacrebleu")
-
 training_args = Seq2SeqTrainingArguments(
     output_dir="../00_assets/models/t5-small-finetune-opus-books",
-    evaluation_strategy="epoch",
+    evaluation_strategy="steps",  # 每个 epoch 结束后进行评估
+    save_strategy="epoch",
+    logging_steps=10,
+    eval_steps=100,
+
+    num_train_epochs=2,
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
     weight_decay=0.01,
     save_total_limit=3,
-    num_train_epochs=2,
     predict_with_generate=True,
     push_to_hub=False,
+    report_to="none"
 )
 
 trainer = Seq2SeqTrainer(
@@ -63,6 +66,6 @@ trainer = Seq2SeqTrainer(
 
 trainer.train()
 
-text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
+# text = "translate German to English: Legumes share resources with nitrogen-fixing bacteria."
 # translator = pipeline("translation_xx_to_yy", model="awesome_opus_books_model")
 # translator(text)
